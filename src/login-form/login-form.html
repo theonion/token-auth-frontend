@@ -1,0 +1,28 @@
+<div class="login-container">
+  <div class="login-header">
+    <img ng-src="{{LOGO_URL}}">
+  </div>
+  <div class="login-form">
+    <p class="text-center welcome-text">Welcome</p>
+    <form>
+      <div class="login-input username">
+        <label>Username</label>
+        <input type="text" class="form-control" ng-model="username" required>
+        <div class="alert alert-danger required-label" ng-class="submitted">Required</div>
+      </div>
+      <div class="login-input password">
+        <label>Password</label>
+        <input type="password" class="form-control" ng-model="password" required>
+        <div class="alert alert-danger required-label" ng-class="submitted">Required</div>
+      </div>
+      <alertbar></alertbar>
+      <button class="btn add-btn btn-success" type="submit" ng-click="submitLogin()">
+        <span>Sign in</span>
+      </button>
+    </form>
+    <a class="contact" href="mailto:webtech@theonion.com">
+      <div class="question-mark">?</div>
+      <div class="contact-tech">Contact Tech</div>
+    </a>
+  </div>
+</div>
