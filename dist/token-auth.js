@@ -45,12 +45,12 @@ angular.module('tokenAuth.authService', [
   'LocalStorageModule'
 ])
   .service('authService',
-  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'API_HOST',
-  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ API_HOST) {
+  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TOKEN_AUTH_API_HOST',
+  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ TOKEN_AUTH_API_HOST) {
     var service = {};
 
     service.login = function (username, password) {
-      return $http.post(API_HOST + '/api/token/auth', {
+      return $http.post(TOKEN_AUTH_API_HOST + '/api/token/auth', {
         username: username,
         password: password
       })
@@ -69,7 +69,7 @@ angular.module('tokenAuth.authService', [
     service.refreshToken = function () {
       var token = localStorageService.get('authToken');
       return $http.post(
-          API_HOST + '/api/token/refresh',
+          TOKEN_AUTH_API_HOST + '/api/token/refresh',
           {token: token},
           {ignoreAuthModule: true})
         .success(service.tokenRefreshed)
@@ -168,14 +168,14 @@ angular.module('tokenAuth.loginForm', [
   .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'LOGO_URL', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, LOGO_URL, /*AlertService,*/ CurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'authService', 'TOKEN_AUTH_LOGO_URL', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
+        function ($scope, $location, authService, TOKEN_AUTH_LOGO_URL, /*AlertService,*/ CurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
             $scope.password = '';
             $scope.submitted = '';
-            $scope.LOGO_URL = LOGO_URL;
+            $scope.LOGO_URL = TOKEN_AUTH_LOGO_URL;
           };
 
           $scope.submitLogin = function () {
@@ -203,8 +203,22 @@ angular.module('tokenAuth.loginForm', [
 
 // Source: .tmp/scripts/token-auth-settings.js
 angular.module('tokenAuth.settings', [])
-  .constant('LOGO_URL', '')
-  .constant('API_HOST', '');
+  .config(["$injector", function ($injector) {
+    var logoUrlKey = 'TOKEN_AUTH_LOGO_URL';
+    var apiHostKey = 'TOKEN_AUTH_API_HOST';
+
+    try {
+      $injector.get(logoUrlKey);
+    } catch (e) {
+      console.log('You must provide ' + logoUrlKey + ' for tokenAuth module!');
+    }
+
+    try {
+      $injector.get(apiHostKey);
+    } catch (e) {
+      console.log('You must provide ' + apiHostKey + ' for tokenAuth module!');
+    }
+  }]);
 
 // Source: .tmp/scripts/token-auth.js
 angular.module('tokenAuth', [
@@ -215,7 +229,7 @@ angular.module('tokenAuth', [
 // Source: .tmp/templates.js
 angular.module('tokenAuth.templates', []).run(['$templateCache', function($templateCache) {
 $templateCache.put('login-form/login-form.html',
-    "<div class=login-container><div class=login-header><img ng-src={{LOGO_URL}}></div><div class=login-form><p class=\"text-center welcome-text\">Welcome</p><form><div class=\"login-input username\"><label>Username</label><input class=form-control ng-model=username required><div class=\"alert alert-danger required-label\" ng-class=submitted>Required</div></div><div class=\"login-input password\"><label>Password</label><input type=password class=form-control ng-model=password required><div class=\"alert alert-danger required-label\" ng-class=submitted>Required</div></div><alertbar></alertbar><button class=\"btn add-btn btn-success\" type=submit ng-click=submitLogin()><span>Sign in</span></button></form><a class=contact href=mailto:webtech@theonion.com><div class=question-mark>?</div><div class=contact-tech>Contact Tech</div></a></div></div>"
+    "<div class=login-container><div class=login-header><img ng-src={{TOKEN_AUTH_LOGO_URL}}></div><div class=login-form><p class=\"text-center welcome-text\">Welcome</p><form><div class=\"login-input username\"><label>Username</label><input class=form-control ng-model=username required><div class=\"alert alert-danger required-label\" ng-class=submitted>Required</div></div><div class=\"login-input password\"><label>Password</label><input type=password class=form-control ng-model=password required><div class=\"alert alert-danger required-label\" ng-class=submitted>Required</div></div><alertbar></alertbar><button class=\"btn add-btn btn-success\" type=submit ng-click=submitLogin()><span>Sign in</span></button></form><a class=contact href=mailto:webtech@theonion.com><div class=question-mark>?</div><div class=contact-tech>Contact Tech</div></a></div></div>"
   );
 
 }]);
