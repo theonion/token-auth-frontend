@@ -161,13 +161,14 @@ angular.module('tokenAuth.currentUser', [
 // Source: .tmp/scripts/login-form/login-form.js
 angular.module('tokenAuth.loginForm', [
   'tokenAuth.authService',
-  'tokenAuth.currentUser'
+  'tokenAuth.currentUser',
+  'tokenAuth.templates'
 ])
-  .directive('LoginForm', [function () {
+  .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'LOGO_URL', 'AlertService', 'CurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, LOGO_URL, AlertService, CurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'authService', 'LOGO_URL', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
+        function ($scope, $location, authService, LOGO_URL, /*AlertService,*/ CurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -178,7 +179,7 @@ angular.module('tokenAuth.loginForm', [
 
           $scope.submitLogin = function () {
             $scope.submitted = 'submitted';
-            AlertService.clear();
+            // AlertService.clear();
             if(!_.isEmpty($scope.username) && !_.isEmpty($scope.password)) {
               authService.login($scope.username, $scope.password)
                 .then($scope.userLoggedIn);
@@ -211,7 +212,7 @@ angular.module('tokenAuth', [
 ]);
 
 // Source: .tmp/templates.js
-angular.module('tokenAuth.templates').run(['$templateCache', function($templateCache) {
+angular.module('tokenAuth.templates', []).run(['$templateCache', function($templateCache) {
 $templateCache.put('login-form/login-form.html',
     "<div class=login-container><div class=login-header><img ng-src={{LOGO_URL}}></div><div class=login-form><p class=\"text-center welcome-text\">Welcome</p><form><div class=\"login-input username\"><label>Username</label><input class=form-control ng-model=username required><div class=\"alert alert-danger required-label\" ng-class=submitted>Required</div></div><div class=\"login-input password\"><label>Password</label><input type=password class=form-control ng-model=password required><div class=\"alert alert-danger required-label\" ng-class=submitted>Required</div></div><alertbar></alertbar><button class=\"btn add-btn btn-success\" type=submit ng-click=submitLogin()><span>Sign in</span></button></form><a class=contact href=mailto:webtech@theonion.com><div class=question-mark>?</div><div class=contact-tech>Contact Tech</div></a></div></div>"
   );

@@ -9,7 +9,6 @@ module.exports = {
     src: ['**/*.html'],
     dest: '.tmp/templates.js',
     options: {
-      module: 'tokenAuth.templates',
       htmlmin: {
         collapseBooleanAttributes: true,
         collapseWhitespace: true,
@@ -19,7 +18,9 @@ module.exports = {
         removeRedundantAttributes: true,
         removeScriptTypeAttributes: true,
         removeStyleLinkTypeAttributes: true
-      }
+      },
+      module: 'tokenAuth.templates',
+      standalone: true
     }
   }
 };

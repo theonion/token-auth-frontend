@@ -27,7 +27,7 @@ describe('Directive: LoginForm', function () {
     module('tokenAuth');
 
     inject(function (_authService_, /*_AlertService_,*/ _$httpBackend_, _CurrentUser_,
-        _$location_, /*_BettyService_,*/ $compile, $rootScope, $templateCache) {
+        _$location_, /*_BettyService_,*/ $compile, $rootScope) {
       authService = _authService_;
       // AlertService = _AlertService_;
       $httpBackend = _$httpBackend_;

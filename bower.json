@@ -1,6 +1,6 @@
 {
   "name": "token-auth-frontend",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": [
     "dist/login-form.css",
     "dist/login-form.js"

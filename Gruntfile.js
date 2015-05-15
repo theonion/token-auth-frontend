@@ -43,5 +43,10 @@ module.exports = function (grunt) {
     'clean:tmp'
   ]);
 
+  grunt.registerTask('release', [
+    'build',
+    'bump'
+  ]);
+
   grunt.initConfig(config);
 };
