@@ -9,14 +9,19 @@ describe('Service: authService', function () {
   var localStorageService;
   var authService;
   // var alertService;
-  var API_HOST;
+  var TOKEN_AUTH_API_HOST;
 
   beforeEach(function () {
+    module(function ($provide) {
+      $provide.constant('TOKEN_AUTH_LOGO_URL', 'http://some.logo.url');
+      $provide.constant('TOKEN_AUTH_API_HOST', 'http://some.api.host');
+    });
+
     module('tokenAuth');
 
     inject(function (_$httpBackend_, _$rootScope_, _$location_, _$window_,
         _authService_, /*_AlertService_,*/ _localStorageService_, _httpRequestBuffer_,
-        _API_HOST_) {
+        _TOKEN_AUTH_API_HOST_) {
       $httpBackend = _$httpBackend_;
       $location = _$location_;
       authService = _authService_;
@@ -25,7 +30,7 @@ describe('Service: authService', function () {
       $rootScope = _$rootScope_;
       $window = _$window_;
       httpRequestBuffer = _httpRequestBuffer_;
-      API_HOST = _API_HOST_;
+      TOKEN_AUTH_API_HOST = _TOKEN_AUTH_API_HOST_;
     });
   });
 
@@ -43,7 +48,7 @@ describe('Service: authService', function () {
       it('returns a promise', function () {
         $httpBackend.when(
             'POST',
-            API_HOST + '/api/token/auth')
+            TOKEN_AUTH_API_HOST + '/api/token/auth')
           .respond({token: '12345'});
         var response = authService.login('username', 'password');
         expect(response.then).to.be.a('function');
@@ -53,7 +58,7 @@ describe('Service: authService', function () {
     describe('success', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(
-            API_HOST + '/api/token/auth',
+            TOKEN_AUTH_API_HOST + '/api/token/auth',
             expectedPayload)
           .respond(201, {token: '12345'});
         authService.login('cnorris', 'tearskillcancer');
@@ -67,7 +72,7 @@ describe('Service: authService', function () {
 
     describe('error', function () {
       beforeEach(function () {
-        $httpBackend.expectPOST(API_HOST + '/api/token/auth', expectedPayload).respond(403, {});
+        $httpBackend.expectPOST(TOKEN_AUTH_API_HOST + '/api/token/auth', expectedPayload).respond(403, {});
         authService.login('cnorris', 'tearskillcancer');
       });
 
@@ -114,7 +119,7 @@ describe('Service: authService', function () {
     describe('success', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(
-            API_HOST + '/api/token/refresh',
+            TOKEN_AUTH_API_HOST + '/api/token/refresh',
             {token: 'sometoken'})
           .respond(200, {token: 'someothertoken'});
         authService.refreshToken();
@@ -130,7 +135,7 @@ describe('Service: authService', function () {
     describe('error', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(
-            API_HOST + '/api/token/refresh',
+            TOKEN_AUTH_API_HOST + '/api/token/refresh',
             {token: 'sometoken'})
           .respond(403, {token: 'someothertoken'});
         authService.refreshToken();

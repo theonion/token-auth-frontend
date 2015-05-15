@@ -8,14 +8,12 @@
 module.exports = {
   options: {
     files: [
-      'package.json',
-      'bower.json'
+      'package.json'
     ],
     commit: true,
     commitMessage: 'Release %VERSION%',
     commitFiles: [
       'package.json',
-      'bower.json',
       'dist'
     ],
     createTag: true,

@@ -20,8 +20,9 @@ describe('Directive: LoginForm', function () {
   promiseStub.then = function () {};
 
   beforeEach(function () {
-    module('tokenAuth.settings', function ($provide) {
-      $provide.constant('LOGO_URL', 'http://some.logo.url');
+    module(function ($provide) {
+      $provide.constant('TOKEN_AUTH_LOGO_URL', 'http://some.logo.url');
+      $provide.constant('TOKEN_AUTH_API_HOST', 'http://some.api.host');
     });
 
     module('tokenAuth');

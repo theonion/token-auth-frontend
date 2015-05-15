@@ -6,12 +6,12 @@ angular.module('tokenAuth.authService', [
   'LocalStorageModule'
 ])
   .service('authService',
-  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'API_HOST',
-  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ API_HOST) {
+  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TOKEN_AUTH_API_HOST',
+  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ TOKEN_AUTH_API_HOST) {
     var service = {};
 
     service.login = function (username, password) {
-      return $http.post(API_HOST + '/api/token/auth', {
+      return $http.post(TOKEN_AUTH_API_HOST + '/api/token/auth', {
         username: username,
         password: password
       })
@@ -30,7 +30,7 @@ angular.module('tokenAuth.authService', [
     service.refreshToken = function () {
       var token = localStorageService.get('authToken');
       return $http.post(
-          API_HOST + '/api/token/refresh',
+          TOKEN_AUTH_API_HOST + '/api/token/refresh',
           {token: token},
           {ignoreAuthModule: true})
         .success(service.tokenRefreshed)

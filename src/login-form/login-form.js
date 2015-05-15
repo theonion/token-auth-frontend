@@ -8,14 +8,14 @@ angular.module('tokenAuth.loginForm', [
   .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'LOGO_URL', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, LOGO_URL, /*AlertService,*/ CurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'authService', 'TOKEN_AUTH_LOGO_URL', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
+        function ($scope, $location, authService, TOKEN_AUTH_LOGO_URL, /*AlertService,*/ CurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
             $scope.password = '';
             $scope.submitted = '';
-            $scope.LOGO_URL = LOGO_URL;
+            $scope.LOGO_URL = TOKEN_AUTH_LOGO_URL;
           };
 
           $scope.submitLogin = function () {
