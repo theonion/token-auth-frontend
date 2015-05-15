@@ -13,6 +13,6 @@ module.exports = {
   },
   js: {
     src: ['.tmp/**/*.js'],
-    dest: 'dist/login-form.js'
+    dest: 'dist/token-auth.js'
   }
 };
