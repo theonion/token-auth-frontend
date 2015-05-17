@@ -41,16 +41,16 @@ angular.module('tokenAuth.authInterceptor', [
 // Source: .tmp/scripts/auth-service/auth-service.js
 angular.module('tokenAuth.authService', [
   'tokenAuth.httpRequestBuffer',
-  'tokenAuth.settings',
+  'tokenAuth.config',
   'LocalStorageModule'
 ])
   .service('authService',
-  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TOKEN_AUTH_API_HOST',
-  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ TOKEN_AUTH_API_HOST) {
+  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TokenAuthConfig',
+  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ TokenAuthConfig) {
     var service = {};
 
     service.login = function (username, password) {
-      return $http.post(TOKEN_AUTH_API_HOST + '/api/token/auth', {
+      return $http.post(TokenAuthConfig.getApiHost() + '/api/token/auth', {
         username: username,
         password: password
       })
@@ -69,7 +69,7 @@ angular.module('tokenAuth.authService', [
     service.refreshToken = function () {
       var token = localStorageService.get('authToken');
       return $http.post(
-          TOKEN_AUTH_API_HOST + '/api/token/refresh',
+          TokenAuthConfig.getApiHost() + '/api/token/refresh',
           {token: token},
           {ignoreAuthModule: true})
         .success(service.tokenRefreshed)
@@ -168,14 +168,14 @@ angular.module('tokenAuth.loginForm', [
   .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'TOKEN_AUTH_LOGO_URL', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, TOKEN_AUTH_LOGO_URL, /*AlertService,*/ CurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'authService', 'TokenAuthConfig', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
+        function ($scope, $location, authService, TokenAuthConfig, /*AlertService,*/ CurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
             $scope.password = '';
             $scope.submitted = '';
-            $scope.LOGO_URL = TOKEN_AUTH_LOGO_URL;
+            $scope.LOGO_URL = TokenAuthConfig.getLogoUrl();
           };
 
           $scope.submitLogin = function () {
@@ -201,24 +201,39 @@ angular.module('tokenAuth.loginForm', [
     };
   }]);
 
-// Source: .tmp/scripts/token-auth-settings.js
-angular.module('tokenAuth.settings', [])
-  .config(["$injector", function ($injector) {
-    var logoUrlKey = 'TOKEN_AUTH_LOGO_URL';
-    var apiHostKey = 'TOKEN_AUTH_API_HOST';
+// Source: .tmp/scripts/token-auth-config.js
+angular.module('tokenAuth.config', [])
+  .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
+    var logoUrl = '';
+    var apiHost = '';
 
-    try {
-      $injector.get(logoUrlKey);
-    } catch (e) {
-      console.log('You must provide ' + logoUrlKey + ' for tokenAuth module!');
-    }
+    this.setLogoUrl = function (value) {
+      if (typeof(value) === 'string') {
+        logoUrl = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
+      }
+    };
 
-    try {
-      $injector.get(apiHostKey);
-    } catch (e) {
-      console.log('You must provide ' + apiHostKey + ' for tokenAuth module!');
-    }
-  }]);
+    this.setApiHost = function (value) {
+      if (typeof(value) === 'string') {
+        apiHost = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.apiHost must be a string!');
+      }
+    };
+
+    this.$get = function () {
+      return {
+        getLogoUrl: function () {
+          return logoUrl;
+        },
+        getApiHost: function () {
+          return apiHost;
+        }
+      };
+    };
+  });
 
 // Source: .tmp/scripts/token-auth.js
 angular.module('tokenAuth', [
