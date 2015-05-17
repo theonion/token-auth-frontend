@@ -20,12 +20,10 @@ describe('Directive: LoginForm', function () {
   promiseStub.then = function () {};
 
   beforeEach(function () {
-    module(function ($provide) {
-      $provide.constant('TOKEN_AUTH_LOGO_URL', 'http://some.logo.url');
-      $provide.constant('TOKEN_AUTH_API_HOST', 'http://some.api.host');
+    module('tokenAuth', function (TokenAuthConfigProvider) {
+      TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/logo.png');
+      TokenAuthConfigProvider.setApiHost('http://some.api.host');
     });
-
-    module('tokenAuth');
 
     inject(function (_authService_, /*_AlertService_,*/ _$httpBackend_, _CurrentUser_,
         _$location_, /*_BettyService_,*/ $compile, $rootScope) {
@@ -65,7 +63,7 @@ describe('Directive: LoginForm', function () {
     });
 
     it('sets the logo url based on the global constant', function () {
-      expect($scope.LOGO_URL).to.eql('http://some.logo.url');
+      expect($scope.LOGO_URL).to.eql('http://some.logo.url/logo.png');
     });
   });
 
