@@ -3,7 +3,7 @@
 angular.module('tokenAuth.currentUser', [
   'LocalStorageModule'
 ])
-  .service('CurrentUser',
+  .service('TokenAuthCurrentUser',
     ['localStorageService', '$location',
     function (localStorageService, $location) {
       this.currentUser = null;

@@ -7,7 +7,7 @@ describe('Directive: LoginForm', function () {
   var $location;
   var authService;
   // var AlertService;
-  var CurrentUser;
+  var TokenAuthCurrentUser;
   // var BettyService;
 
   promiseStub = sinon.stub();
@@ -27,13 +27,13 @@ describe('Directive: LoginForm', function () {
       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
     });
 
-    inject(function (_authService_, /*_AlertService_,*/ _$httpBackend_, _CurrentUser_,
+    inject(function (_authService_, /*_AlertService_,*/ _$httpBackend_, _TokenAuthCurrentUser_,
         _$location_, /*_BettyService_,*/ $compile, $rootScope) {
       authService = _authService_;
       // AlertService = _AlertService_;
       $httpBackend = _$httpBackend_;
       $location = _$location_;
-      CurrentUser = _CurrentUser_;
+      TokenAuthCurrentUser = _TokenAuthCurrentUser_;
       // BettyService = _BettyService_;
 
       var $directiveScope = $rootScope.$new();
@@ -141,14 +141,14 @@ describe('Directive: LoginForm', function () {
   describe('#userLoggedIn', function () {
     beforeEach(function () {
       $scope.username = 'cnorris';
-      sinon.stub(CurrentUser, 'setCurrentUser');
+      sinon.stub(TokenAuthCurrentUser, 'setCurrentUser');
       sinon.stub($location, 'path');
       // sinon.stub(BettyService, 'updateBettyConfig');
       $scope.userLoggedIn();
     });
 
     it('sets the currently logged in user', function () {
-      expect(CurrentUser.setCurrentUser.calledWith('cnorris')).to.be.true;
+      expect(TokenAuthCurrentUser.setCurrentUser.calledWith('cnorris')).to.be.true;
     });
 
     it('redirects the user to the cms root path', function () {
