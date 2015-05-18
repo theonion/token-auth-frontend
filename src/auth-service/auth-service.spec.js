@@ -15,6 +15,8 @@ describe('Service: authService', function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
       TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/something.png');
       TokenAuthConfigProvider.setApiHost('http://some.api.host');
+      TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
+      TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
     });
 
     inject(function (_$httpBackend_, _$rootScope_, _$location_, _$window_,
@@ -46,7 +48,7 @@ describe('Service: authService', function () {
       it('returns a promise', function () {
         $httpBackend.when(
             'POST',
-            TokenAuthConfig.getApiHost() + '/api/token/auth')
+            TokenAuthConfig.getApiEndpointAuth())
           .respond({token: '12345'});
         var response = authService.login('username', 'password');
         expect(response.then).to.be.a('function');
@@ -56,7 +58,7 @@ describe('Service: authService', function () {
     describe('success', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(
-            TokenAuthConfig.getApiHost() + '/api/token/auth',
+            TokenAuthConfig.getApiEndpointAuth(),
             expectedPayload)
           .respond(201, {token: '12345'});
         authService.login('cnorris', 'tearskillcancer');
@@ -70,7 +72,7 @@ describe('Service: authService', function () {
 
     describe('error', function () {
       beforeEach(function () {
-        $httpBackend.expectPOST(TokenAuthConfig.getApiHost() + '/api/token/auth', expectedPayload).respond(403, {});
+        $httpBackend.expectPOST(TokenAuthConfig.getApiEndpointAuth(), expectedPayload).respond(403, {});
         authService.login('cnorris', 'tearskillcancer');
       });
 
@@ -117,7 +119,7 @@ describe('Service: authService', function () {
     describe('success', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(
-            TokenAuthConfig.getApiHost() + '/api/token/refresh',
+            TokenAuthConfig.getApiEndpointRefresh(),
             {token: 'sometoken'})
           .respond(200, {token: 'someothertoken'});
         authService.refreshToken();
@@ -133,7 +135,7 @@ describe('Service: authService', function () {
     describe('error', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(
-            TokenAuthConfig.getApiHost() + '/api/token/refresh',
+            TokenAuthConfig.getApiEndpointRefresh(),
             {token: 'sometoken'})
           .respond(403, {token: 'someothertoken'});
         authService.refreshToken();

@@ -11,7 +11,7 @@ angular.module('tokenAuth.authService', [
     var service = {};
 
     service.login = function (username, password) {
-      return $http.post(TokenAuthConfig.getApiHost() + '/api/token/auth', {
+      return $http.post(TokenAuthConfig.getApiEndpointAuth(), {
         username: username,
         password: password
       })
@@ -30,7 +30,7 @@ angular.module('tokenAuth.authService', [
     service.refreshToken = function () {
       var token = localStorageService.get('authToken');
       return $http.post(
-          TokenAuthConfig.getApiHost() + '/api/token/refresh',
+          TokenAuthConfig.getApiEndpointRefresh(),
           {token: token},
           {ignoreAuthModule: true})
         .success(service.tokenRefreshed)

@@ -23,6 +23,8 @@ describe('Directive: LoginForm', function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
       TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/logo.png');
       TokenAuthConfigProvider.setApiHost('http://some.api.host');
+      TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
+      TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
     });
 
     inject(function (_authService_, /*_AlertService_,*/ _$httpBackend_, _CurrentUser_,
