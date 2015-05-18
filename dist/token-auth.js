@@ -50,7 +50,7 @@ angular.module('tokenAuth.authService', [
     var service = {};
 
     service.login = function (username, password) {
-      return $http.post(TokenAuthConfig.getApiHost() + '/api/token/auth', {
+      return $http.post(TokenAuthConfig.getApiEndpointAuth(), {
         username: username,
         password: password
       })
@@ -69,7 +69,7 @@ angular.module('tokenAuth.authService', [
     service.refreshToken = function () {
       var token = localStorageService.get('authToken');
       return $http.post(
-          TokenAuthConfig.getApiHost() + '/api/token/refresh',
+          TokenAuthConfig.getApiEndpointRefresh(),
           {token: token},
           {ignoreAuthModule: true})
         .success(service.tokenRefreshed)
@@ -206,6 +206,8 @@ angular.module('tokenAuth.config', [])
   .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
     var logoUrl = '';
     var apiHost = '';
+    var apiEndpointAuth = '/api/token/auth';
+    var apiEndpointRefresh = '/api/token/refresh';
 
     this.setLogoUrl = function (value) {
       if (typeof(value) === 'string') {
@@ -223,15 +225,34 @@ angular.module('tokenAuth.config', [])
       }
     };
 
+    this.setApiEndpointAuth = function (value) {
+      if (typeof(value) === 'string') {
+        apiEndpointAuth = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.apiEndpointAuth must be a string!');
+      }
+    };
+
+    this.setApiEndpointRefresh = function (value) {
+      if (typeof(value) === 'string') {
+        apiEndpointRefresh = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.apiEndpointRefresh must be a string!');
+      }
+    };
+
     this.$get = function () {
       return {
         getLogoUrl: function () {
           return logoUrl;
         },
-        getApiHost: function () {
-          return apiHost;
+        getApiEndpointAuth: function () {
+          return apiHost + apiEndpointAuth;
+        },
+        getApiEndpointRefresh: function () {
+          return apiHost + apiEndpointRefresh;
         }
-      };
+     };
     };
   });
 
