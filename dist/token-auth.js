@@ -139,7 +139,7 @@ angular.module('tokenAuth.httpRequestBuffer', [])
 angular.module('tokenAuth.currentUser', [
   'LocalStorageModule'
 ])
-  .service('CurrentUser',
+  .service('TokenAuthCurrentUser',
     ['localStorageService', '$location',
     function (localStorageService, $location) {
       this.currentUser = null;
@@ -168,8 +168,8 @@ angular.module('tokenAuth.loginForm', [
   .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'TokenAuthConfig', /*'AlertService',*/ 'CurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, TokenAuthConfig, /*AlertService,*/ CurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'authService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
+        function ($scope, $location, authService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -188,7 +188,7 @@ angular.module('tokenAuth.loginForm', [
           };
 
           $scope.userLoggedIn = function () {
-            CurrentUser.setCurrentUser($scope.username);
+            TokenAuthCurrentUser.setCurrentUser($scope.username);
             // BettyService.updateBettyConfig();
             $location.path('cms/');
           };
