@@ -4,15 +4,17 @@ angular.module('tokenAuth.authInterceptor', [
   'tokenAuth.authService',
   'tokenAuth.httpRequestBuffer'
 ])
-  .factory('authInterceptor',
-  ['$q', '$location', '$injector', 'localStorageService', 'httpRequestBuffer',
-  function ($q, $location, $injector, localStorageService, httpRequestBuffer) {
+  .factory('AuthInterceptor',
+  ['$q', '$location', '$injector', 'localStorageService', 'HttpRequestBuffer',
+    'TokenAuthConfig',
+  function ($q, $location, $injector, localStorageService, HttpRequestBuffer,
+    TokenAuthConfig) {
 
     var factory = {};
 
     factory.request = function (config) {
       config.headers = config.headers || {};
-      var token = localStorageService.get('authToken');
+      var token = localStorageService.get(TokenAuthConfig.getTokenKey());
       var isBettyCropperRequest = _.has(config.headers, 'X-Betty-Api-Key');
       if (token && !config.ignoreAuthorizationHeader && !isBettyCropperRequest) {
         config.headers.Authorization = 'JWT ' + token;
@@ -26,9 +28,9 @@ angular.module('tokenAuth.authInterceptor', [
         if (!ignoreAuthModule) {
           if (response.status === 403 || response.status === 401) {
             var deferred = $q.defer();
-            httpRequestBuffer.append(response.config, deferred);
-            var authService = $injector.get('authService');
-            authService.refreshToken();
+            HttpRequestBuffer.append(response.config, deferred);
+            var AuthService = $injector.get('AuthService');
+            AuthService.refreshToken();
           }
         }
       }
@@ -44,9 +46,9 @@ angular.module('tokenAuth.authService', [
   'tokenAuth.config',
   'LocalStorageModule'
 ])
-  .service('authService',
-  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TokenAuthConfig',
-  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ TokenAuthConfig) {
+  .service('AuthService',
+  ['$rootScope', '$location', '$http', 'HttpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TokenAuthConfig',
+  function ($rootScope, $location, $http, HttpRequestBuffer, localStorageService, /*AlertService,*/ TokenAuthConfig) {
     var service = {};
 
     service.login = function (username, password) {
@@ -59,15 +61,20 @@ angular.module('tokenAuth.authService', [
     };
 
     service.loginSuccess = function (response) {
-      localStorageService.set('authToken', response.token);
+      localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
     };
 
     service.loginError = function () {
       // AlertService.error('Username or password provided is incorrect.', false);
     };
 
+    service.logout = function () {
+      localStorageService.remove(TokenAuthConfig.getTokenKey());
+      $location.path(TokenAuthConfig.getLoginPagePath());
+    };
+
     service.refreshToken = function () {
-      var token = localStorageService.get('authToken');
+      var token = localStorageService.get(TokenAuthConfig.getTokenKey());
       return $http.post(
           TokenAuthConfig.getApiEndpointRefresh(),
           {token: token},
@@ -77,14 +84,14 @@ angular.module('tokenAuth.authService', [
     };
 
     service.tokenRefreshed = function (response) {
-      localStorageService.set('authToken', response.token);
-      httpRequestBuffer.retryAll();
+      localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
+      HttpRequestBuffer.retryAll();
     };
 
     service.tokenRefreshError = function () {
-      httpRequestBuffer.rejectAll();
+      HttpRequestBuffer.rejectAll();
       // AlertService.error('You failed to authenticate. Redirecting to login.', false);
-      $location.path('cms/login');
+      $location.path(TokenAuthConfig.getLoginPagePath());
     };
 
     return service;
@@ -92,7 +99,7 @@ angular.module('tokenAuth.authService', [
 
 // Source: .tmp/scripts/auth-service/http-request-buffer-factory.js
 angular.module('tokenAuth.httpRequestBuffer', [])
-  .service('httpRequestBuffer',
+  .service('HttpRequestBuffer',
     ['$injector',
     function ($injector) {
       var buffer = [];
@@ -168,8 +175,8 @@ angular.module('tokenAuth.loginForm', [
   .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'AuthService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
+        function ($scope, $location, AuthService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -182,7 +189,7 @@ angular.module('tokenAuth.loginForm', [
             $scope.submitted = 'submitted';
             // AlertService.clear();
             if(!_.isEmpty($scope.username) && !_.isEmpty($scope.password)) {
-              authService.login($scope.username, $scope.password)
+              AuthService.login($scope.username, $scope.password)
                 .then($scope.userLoggedIn);
             }
           };
@@ -204,26 +211,12 @@ angular.module('tokenAuth.loginForm', [
 // Source: .tmp/scripts/token-auth-config.js
 angular.module('tokenAuth.config', [])
   .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
-    var logoUrl = '';
-    var apiHost = '';
     var apiEndpointAuth = '/api/token/auth';
     var apiEndpointRefresh = '/api/token/refresh';
-
-    this.setLogoUrl = function (value) {
-      if (typeof(value) === 'string') {
-        logoUrl = value;
-      } else {
-        throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
-      }
-    };
-
-    this.setApiHost = function (value) {
-      if (typeof(value) === 'string') {
-        apiHost = value;
-      } else {
-        throw new TypeError('TokenAuthConfig.apiHost must be a string!');
-      }
-    };
+    var apiHost = '';
+    var loginPagePath = '';
+    var logoUrl = '';
+    var tokenKey = 'authToken';
 
     this.setApiEndpointAuth = function (value) {
       if (typeof(value) === 'string') {
@@ -241,16 +234,54 @@ angular.module('tokenAuth.config', [])
       }
     };
 
+    this.setApiHost = function (value) {
+      if (typeof(value) === 'string') {
+        apiHost = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.apiHost must be a string!');
+      }
+    };
+
+    this.setLoginPagePath = function (value) {
+      if (typeof(value) === 'string') {
+        loginPagePath = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.loginPagePath must be a string!');
+      }
+    };
+
+    this.setLogoUrl = function (value) {
+      if (typeof(value) === 'string') {
+        logoUrl = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
+      }
+    };
+
+    this.setTokenKey = function (value) {
+      if (typeof(value) === 'string') {
+        tokenKey = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.tokenKey must be a string!');
+      }
+    };
+
     this.$get = function () {
       return {
-        getLogoUrl: function () {
-          return logoUrl;
-        },
         getApiEndpointAuth: function () {
           return apiHost + apiEndpointAuth;
         },
         getApiEndpointRefresh: function () {
           return apiHost + apiEndpointRefresh;
+        },
+        getLoginPagePath: function () {
+          return loginPagePath;
+        },
+        getLogoUrl: function () {
+          return logoUrl;
+        },
+        getTokenKey: function () {
+          return tokenKey;
         }
      };
     };
