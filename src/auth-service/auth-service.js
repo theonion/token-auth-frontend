@@ -5,9 +5,9 @@ angular.module('tokenAuth.authService', [
   'tokenAuth.config',
   'LocalStorageModule'
 ])
-  .service('authService',
-  ['$rootScope', '$location', '$http', 'httpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TokenAuthConfig',
-  function ($rootScope, $location, $http, httpRequestBuffer, localStorageService, /*AlertService,*/ TokenAuthConfig) {
+  .service('AuthService',
+  ['$rootScope', '$location', '$http', 'HttpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TokenAuthConfig',
+  function ($rootScope, $location, $http, HttpRequestBuffer, localStorageService, /*AlertService,*/ TokenAuthConfig) {
     var service = {};
 
     service.login = function (username, password) {
@@ -20,15 +20,20 @@ angular.module('tokenAuth.authService', [
     };
 
     service.loginSuccess = function (response) {
-      localStorageService.set('authToken', response.token);
+      localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
     };
 
     service.loginError = function () {
       // AlertService.error('Username or password provided is incorrect.', false);
     };
 
+    service.logout = function () {
+      localStorageService.remove(TokenAuthConfig.getTokenKey());
+      $location.path(TokenAuthConfig.getLoginPagePath());
+    };
+
     service.refreshToken = function () {
-      var token = localStorageService.get('authToken');
+      var token = localStorageService.get(TokenAuthConfig.getTokenKey());
       return $http.post(
           TokenAuthConfig.getApiEndpointRefresh(),
           {token: token},
@@ -38,14 +43,14 @@ angular.module('tokenAuth.authService', [
     };
 
     service.tokenRefreshed = function (response) {
-      localStorageService.set('authToken', response.token);
-      httpRequestBuffer.retryAll();
+      localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
+      HttpRequestBuffer.retryAll();
     };
 
     service.tokenRefreshError = function () {
-      httpRequestBuffer.rejectAll();
+      HttpRequestBuffer.rejectAll();
       // AlertService.error('You failed to authenticate. Redirecting to login.', false);
-      $location.path('cms/login');
+      $location.path(TokenAuthConfig.getLoginPagePath());
     };
 
     return service;

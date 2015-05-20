@@ -5,7 +5,7 @@ describe('Directive: LoginForm', function () {
   var promiseStub;
   var $httpBackend;
   var $location;
-  var authService;
+  var AuthService;
   // var AlertService;
   var TokenAuthCurrentUser;
   // var BettyService;
@@ -27,9 +27,9 @@ describe('Directive: LoginForm', function () {
       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
     });
 
-    inject(function (_authService_, /*_AlertService_,*/ _$httpBackend_, _TokenAuthCurrentUser_,
+    inject(function (_AuthService_, /*_AlertService_,*/ _$httpBackend_, _TokenAuthCurrentUser_,
         _$location_, /*_BettyService_,*/ $compile, $rootScope) {
-      authService = _authService_;
+      AuthService = _AuthService_;
       // AlertService = _AlertService_;
       $httpBackend = _$httpBackend_;
       $location = _$location_;
@@ -82,27 +82,27 @@ describe('Directive: LoginForm', function () {
 
     describe('without username', function () {
       beforeEach(function () {
-        sinon.stub(authService, 'login', promiseStub);
+        sinon.stub(AuthService, 'login', promiseStub);
         $scope.username = '';
         $scope.password = 'somepassword';
         $scope.submitLogin();
       });
 
       it('does not try to login', function () {
-        expect(authService.login.called).to.be.false;
+        expect(AuthService.login.called).to.be.false;
       });
     });
 
     describe('without password', function () {
       beforeEach(function () {
-        sinon.stub(authService, 'login', promiseStub);
+        sinon.stub(AuthService, 'login', promiseStub);
         $scope.username = 'somename';
         $scope.password = '';
         $scope.submitLogin();
       });
 
       it('does not try to login', function () {
-        expect(authService.login.called).to.be.false;
+        expect(AuthService.login.called).to.be.false;
       });
     });
 
@@ -110,7 +110,7 @@ describe('Directive: LoginForm', function () {
       beforeEach(function () {
         $scope.username = 'somename';
         $scope.password = 'somepassword';
-        sinon.spy(authService, 'login');
+        sinon.spy(AuthService, 'login');
         $httpBackend.expectPOST('/api/token/auth').respond(200, {token: 'greatsuccess'});
       });
 
@@ -121,7 +121,7 @@ describe('Directive: LoginForm', function () {
 
       it('logs in through the auth service with the username and password', function () {
         $scope.submitLogin();
-        expect(authService.login.calledWith('somename', 'somepassword')).to.be.true;
+        expect(AuthService.login.calledWith('somename', 'somepassword')).to.be.true;
       });
 
       describe('error', function () {

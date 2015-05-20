@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('tokenAuth.httpRequestBuffer', [])
-  .service('httpRequestBuffer',
+  .service('HttpRequestBuffer',
     ['$injector',
     function ($injector) {
       var buffer = [];

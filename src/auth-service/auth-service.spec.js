@@ -1,15 +1,16 @@
 'use strict';
 
-describe('Service: authService', function () {
+describe('Service: AuthService', function () {
   var $httpBackend;
   var $rootScope;
   var $location;
-  var httpRequestBuffer;
+  var HttpRequestBuffer;
   var $window;
   var localStorageService;
-  var authService;
+  var AuthService;
   // var alertService;
   var TokenAuthConfig;
+  var loginPagePath = '/cms/login';
 
   beforeEach(function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
@@ -17,19 +18,20 @@ describe('Service: authService', function () {
       TokenAuthConfigProvider.setApiHost('http://some.api.host');
       TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
+      TokenAuthConfigProvider.setLoginPagePath(loginPagePath);
     });
 
     inject(function (_$httpBackend_, _$rootScope_, _$location_, _$window_,
-        _authService_, /*_AlertService_,*/ _localStorageService_, _httpRequestBuffer_,
+        _AuthService_, /*_AlertService_,*/ _localStorageService_, _HttpRequestBuffer_,
         _TokenAuthConfig_) {
       $httpBackend = _$httpBackend_;
       $location = _$location_;
-      authService = _authService_;
+      AuthService = _AuthService_;
       // alertService = _AlertService_;
       localStorageService = _localStorageService_;
       $rootScope = _$rootScope_;
       $window = _$window_;
-      httpRequestBuffer = _httpRequestBuffer_;
+      HttpRequestBuffer = _HttpRequestBuffer_;
       TokenAuthConfig = _TokenAuthConfig_;
     });
   });
@@ -40,8 +42,8 @@ describe('Service: authService', function () {
       password: 'tearskillcancer'
     };
     beforeEach(function () {
-      sinon.stub(authService, 'loginSuccess');
-      sinon.stub(authService, 'loginError');
+      sinon.stub(AuthService, 'loginSuccess');
+      sinon.stub(AuthService, 'loginError');
     });
 
     describe('always', function () {
@@ -50,7 +52,7 @@ describe('Service: authService', function () {
             'POST',
             TokenAuthConfig.getApiEndpointAuth())
           .respond({token: '12345'});
-        var response = authService.login('username', 'password');
+        var response = AuthService.login('username', 'password');
         expect(response.then).to.be.a('function');
       });
     });
@@ -61,24 +63,24 @@ describe('Service: authService', function () {
             TokenAuthConfig.getApiEndpointAuth(),
             expectedPayload)
           .respond(201, {token: '12345'});
-        authService.login('cnorris', 'tearskillcancer');
+        AuthService.login('cnorris', 'tearskillcancer');
       });
 
       it('calls loginSuccess if successful login', function () {
         $httpBackend.flush();
-        expect(authService.loginSuccess.calledWith({token: '12345'})).to.be.true;
+        expect(AuthService.loginSuccess.calledWith({token: '12345'})).to.be.true;
       });
     });
 
     describe('error', function () {
       beforeEach(function () {
         $httpBackend.expectPOST(TokenAuthConfig.getApiEndpointAuth(), expectedPayload).respond(403, {});
-        authService.login('cnorris', 'tearskillcancer');
+        AuthService.login('cnorris', 'tearskillcancer');
       });
 
       it('calls loginError if unsuccessful login', function () {
         $httpBackend.flush();
-        expect(authService.loginError.calledWith({})).to.be.true;
+        expect(AuthService.loginError.calledWith({})).to.be.true;
       });
     });
   });
@@ -86,18 +88,18 @@ describe('Service: authService', function () {
   describe('#loginSuccess', function () {
     beforeEach(function () {
       sinon.stub(localStorageService, 'set');
-      authService.loginSuccess({token: '12345'});
+      AuthService.loginSuccess({token: '12345'});
     });
 
     it('stores the token using local storage service', function () {
-      expect(localStorageService.set.calledWith('authToken', '12345')).to.be.true;
+      expect(localStorageService.set.calledWith(TokenAuthConfig.getTokenKey(), '12345')).to.be.true;
     });
   });
 
   describe('#loginError', function () {
     beforeEach(function () {
     //   sinon.stub(alertService, 'error');
-    //   authService.loginError({});
+    //   AuthService.loginError({});
     });
 
     it('registers an error with the alert service', function () {
@@ -108,12 +110,12 @@ describe('Service: authService', function () {
   describe('#refreshToken', function () {
     beforeEach(function () {
       sinon.stub(localStorageService, 'get').returns('sometoken');
-      sinon.stub(authService, 'tokenRefreshed');
-      sinon.stub(authService, 'tokenRefreshError');
+      sinon.stub(AuthService, 'tokenRefreshed');
+      sinon.stub(AuthService, 'tokenRefreshError');
     });
 
     it('returns a promise', function () {
-      expect(authService.refreshToken().then).to.be.a('function');
+      expect(AuthService.refreshToken().then).to.be.a('function');
     });
 
     describe('success', function () {
@@ -122,13 +124,13 @@ describe('Service: authService', function () {
             TokenAuthConfig.getApiEndpointRefresh(),
             {token: 'sometoken'})
           .respond(200, {token: 'someothertoken'});
-        authService.refreshToken();
+        AuthService.refreshToken();
       });
 
       it('calls tokenRefreshed', function () {
         $httpBackend.flush();
-        expect(authService.tokenRefreshed.calledWith({token: 'someothertoken'})).to.be.true;
-        expect(authService.tokenRefreshError.called).to.be.false;
+        expect(AuthService.tokenRefreshed.calledWith({token: 'someothertoken'})).to.be.true;
+        expect(AuthService.tokenRefreshError.called).to.be.false;
       });
     });
 
@@ -138,43 +140,55 @@ describe('Service: authService', function () {
             TokenAuthConfig.getApiEndpointRefresh(),
             {token: 'sometoken'})
           .respond(403, {token: 'someothertoken'});
-        authService.refreshToken();
+        AuthService.refreshToken();
       });
 
       it('calls tokenRefreshError', function () {
         $httpBackend.flush();
-        expect(authService.tokenRefreshError.called).to.be.true;
-        expect(authService.tokenRefreshed.called).to.be.false;
+        expect(AuthService.tokenRefreshError.called).to.be.true;
+        expect(AuthService.tokenRefreshed.called).to.be.false;
       });
+    });
+  });
+
+  describe('#logout', function () {
+    it('removes the token from local storage and redirects to the login page', function () {
+      sinon.stub(localStorageService, 'remove');
+      sinon.stub($location, 'path');
+
+      AuthService.logout();
+
+      expect(localStorageService.remove.called).to.be.true;
+      expect($location.path.calledWith(loginPagePath));
     });
   });
 
   describe('#tokenRefreshed', function () {
     beforeEach(function () {
       sinon.stub(localStorageService, 'set');
-      sinon.stub(httpRequestBuffer, 'retryAll');
-      authService.tokenRefreshed({token: 'thetoken'});
+      sinon.stub(HttpRequestBuffer, 'retryAll');
+      AuthService.tokenRefreshed({token: 'thetoken'});
     });
 
     it('stores the token using local storage service', function () {
-      expect(localStorageService.set.calledWith('authToken', 'thetoken')).to.be.true;
+      expect(localStorageService.set.calledWith(TokenAuthConfig.getTokenKey(), 'thetoken')).to.be.true;
     });
 
-    it('tells the httpRequestBuffer to retry all requests', function () {
-      expect(httpRequestBuffer.retryAll.called).to.be.true;
+    it('tells the HttpRequestBuffer to retry all requests', function () {
+      expect(HttpRequestBuffer.retryAll.called).to.be.true;
     });
   });
 
   describe('#tokenRefreshError', function () {
     beforeEach(function () {
-      sinon.stub(httpRequestBuffer, 'rejectAll');
+      sinon.stub(HttpRequestBuffer, 'rejectAll');
       // sinon.stub(alertService, 'error');
       sinon.stub($location, 'path');
-      authService.tokenRefreshError();
+      AuthService.tokenRefreshError();
     });
 
     it('tells the request buffer to reject all pending requests', function () {
-      expect(httpRequestBuffer.rejectAll.called).to.be.true;
+      expect(HttpRequestBuffer.rejectAll.called).to.be.true;
     });
 
     it('registers an error with the alert service', function () {
@@ -182,7 +196,7 @@ describe('Service: authService', function () {
     });
 
     it('redirects the user back to the login page', function () {
-      expect($location.path.calledWith('cms/login')).to.be.true;
+      expect($location.path.calledWith(TokenAuthConfig.getLoginPagePath())).to.be.true;
     });
   });
 });

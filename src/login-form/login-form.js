@@ -8,8 +8,8 @@ angular.module('tokenAuth.loginForm', [
   .directive('loginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'authService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
-        function ($scope, $location, authService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'AuthService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
+        function ($scope, $location, AuthService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -22,7 +22,7 @@ angular.module('tokenAuth.loginForm', [
             $scope.submitted = 'submitted';
             // AlertService.clear();
             if(!_.isEmpty($scope.username) && !_.isEmpty($scope.password)) {
-              authService.login($scope.username, $scope.password)
+              AuthService.login($scope.username, $scope.password)
                 .then($scope.userLoggedIn);
             }
           };

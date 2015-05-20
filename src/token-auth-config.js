@@ -2,26 +2,12 @@
 
 angular.module('tokenAuth.config', [])
   .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
-    var logoUrl = '';
-    var apiHost = '';
     var apiEndpointAuth = '/api/token/auth';
     var apiEndpointRefresh = '/api/token/refresh';
-
-    this.setLogoUrl = function (value) {
-      if (typeof(value) === 'string') {
-        logoUrl = value;
-      } else {
-        throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
-      }
-    };
-
-    this.setApiHost = function (value) {
-      if (typeof(value) === 'string') {
-        apiHost = value;
-      } else {
-        throw new TypeError('TokenAuthConfig.apiHost must be a string!');
-      }
-    };
+    var apiHost = '';
+    var loginPagePath = '';
+    var logoUrl = '';
+    var tokenKey = 'authToken';
 
     this.setApiEndpointAuth = function (value) {
       if (typeof(value) === 'string') {
@@ -39,16 +25,54 @@ angular.module('tokenAuth.config', [])
       }
     };
 
+    this.setApiHost = function (value) {
+      if (typeof(value) === 'string') {
+        apiHost = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.apiHost must be a string!');
+      }
+    };
+
+    this.setLoginPagePath = function (value) {
+      if (typeof(value) === 'string') {
+        loginPagePath = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.loginPagePath must be a string!');
+      }
+    };
+
+    this.setLogoUrl = function (value) {
+      if (typeof(value) === 'string') {
+        logoUrl = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
+      }
+    };
+
+    this.setTokenKey = function (value) {
+      if (typeof(value) === 'string') {
+        tokenKey = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.tokenKey must be a string!');
+      }
+    };
+
     this.$get = function () {
       return {
-        getLogoUrl: function () {
-          return logoUrl;
-        },
         getApiEndpointAuth: function () {
           return apiHost + apiEndpointAuth;
         },
         getApiEndpointRefresh: function () {
           return apiHost + apiEndpointRefresh;
+        },
+        getLoginPagePath: function () {
+          return loginPagePath;
+        },
+        getLogoUrl: function () {
+          return logoUrl;
+        },
+        getTokenKey: function () {
+          return tokenKey;
         }
      };
     };
