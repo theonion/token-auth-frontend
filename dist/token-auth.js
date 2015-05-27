@@ -217,23 +217,35 @@ angular.module('tokenAuth.authInterceptor', [
     factory.request = function (config) {
       config.headers = config.headers || {};
       var token = localStorageService.get(TokenAuthConfig.getTokenKey());
-      var isBettyCropperRequest = _.has(config.headers, 'X-Betty-Api-Key');
-      if (token && !config.ignoreAuthorizationHeader && !isBettyCropperRequest) {
-        config.headers.Authorization = 'JWT ' + token;
+
+      // make this request abortable
+      var abort = $q.defer();
+      config.timeout = abort.promise;
+
+      // check if we have a token, if not, prevent request from firing, send user to login
+      if (token) {
+        var isBettyCropperRequest = _.has(config.headers, 'X-Betty-Api-Key');
+        if (!config.ignoreAuthorizationHeader && !isBettyCropperRequest) {
+          config.headers.Authorization = 'JWT ' + token;
+        }
+      } else if (!(config.ignoreAuthModule || config.headers.ignoreAuthModule)) {
+        // abort requests where there's no token
+        abort.resolve();
+        $location.path(TokenAuthConfig.getLoginPagePath());
       }
+
       return config;
     };
 
     factory.responseError = function (response) {
       if (response.config) {
         var ignoreAuthModule = response.config.ignoreAuthModule || response.config.headers.ignoreAuthModule;
-        if (!ignoreAuthModule) {
-          if (response.status === 403 || response.status === 401) {
-            var deferred = $q.defer();
-            HttpRequestBuffer.append(response.config, deferred);
-            var TokenAuthService = $injector.get('TokenAuthService');
-            TokenAuthService.refreshToken();
-          }
+        if (!ignoreAuthModule && (response.status === 403 || response.status === 401)) {
+          var deferred = $q.defer();
+          HttpRequestBuffer.append(response.config, deferred);
+
+          var TokenAuthService = $injector.get('TokenAuthService');
+          TokenAuthService.refreshToken();
         }
       }
       return $q.reject(response);
