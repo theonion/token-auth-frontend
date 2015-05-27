@@ -2,7 +2,7 @@
   "name": "token-auth-frontend",
   "description": "Frontend for token auth and login page",
   "main": [
-    "dist/login-form.css",
+    "dist/token-auth-login-form.css",
     "dist/token-auth.js"
   ],
   "ignore": [
