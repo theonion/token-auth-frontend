@@ -14,7 +14,7 @@ module.exports = {
     commitMessage: 'Release %VERSION%',
     commitFiles: [
       'package.json',
-      'dist'
+      'dist/*'
     ],
     createTag: true,
     tagName: '%VERSION%',
