@@ -13,12 +13,20 @@ angular.module('tokenAuth.authService', [
     var service = {};
 
     service.login = function (username, password) {
-      return $http.post(TokenAuthConfig.getApiEndpointAuth(), {
+      var deferred = $q.defer();
+
+      deferred.promise
+        .then(service.loginSuccess)
+        .catch(service.loginError);
+
+      $http.post(TokenAuthConfig.getApiEndpointAuth(), {
         username: username,
         password: password
       })
-      .success(service.loginSuccess)
-      .error(service.loginError);
+      .success(deferred.resolve)
+      .error(deferred.reject);
+
+      return deferred.promise;
     };
 
     service.loginSuccess = function (response) {

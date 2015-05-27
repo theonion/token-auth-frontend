@@ -68,6 +68,7 @@ describe('Service: AuthService', function () {
 
       it('calls loginSuccess if successful login', function () {
         $httpBackend.flush();
+        $rootScope.$digest();
         expect(AuthService.loginSuccess.calledWith({token: '12345'})).to.be.true;
       });
     });
