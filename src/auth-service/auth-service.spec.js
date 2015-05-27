@@ -108,45 +108,59 @@ describe('Service: AuthService', function () {
   });
 
   describe('#refreshToken', function () {
-    beforeEach(function () {
-      sinon.stub(localStorageService, 'get').returns('sometoken');
-      sinon.stub(AuthService, 'tokenRefreshed');
-      sinon.stub(AuthService, 'tokenRefreshError');
+
+    it('should not make a request if user has no token in session', function () {
+      sinon.stub(localStorageService, 'get').returns(undefined);
+
+      var failure = sinon.stub();
+      AuthService.refreshToken().catch(failure);
+      $rootScope.$digest();
+
+      expect(failure.calledOnce).to.be.true;
     });
 
-    it('returns a promise', function () {
-      expect(AuthService.refreshToken().then).to.be.a('function');
-    });
+    describe('with token', function () {
 
-    describe('success', function () {
       beforeEach(function () {
-        $httpBackend.expectPOST(
-            TokenAuthConfig.getApiEndpointRefresh(),
-            {token: 'sometoken'})
-          .respond(200, {token: 'someothertoken'});
-        AuthService.refreshToken();
+        sinon.stub(localStorageService, 'get').returns('sometoken');
+        sinon.stub(AuthService, 'tokenRefreshed');
+        sinon.stub(AuthService, 'tokenRefreshError');
       });
 
-      it('calls tokenRefreshed', function () {
-        $httpBackend.flush();
-        expect(AuthService.tokenRefreshed.calledWith({token: 'someothertoken'})).to.be.true;
-        expect(AuthService.tokenRefreshError.called).to.be.false;
-      });
-    });
-
-    describe('error', function () {
-      beforeEach(function () {
-        $httpBackend.expectPOST(
-            TokenAuthConfig.getApiEndpointRefresh(),
-            {token: 'sometoken'})
-          .respond(403, {token: 'someothertoken'});
-        AuthService.refreshToken();
+      it('returns a promise', function () {
+        expect(AuthService.refreshToken().then).to.be.a('function');
       });
 
-      it('calls tokenRefreshError', function () {
-        $httpBackend.flush();
-        expect(AuthService.tokenRefreshError.called).to.be.true;
-        expect(AuthService.tokenRefreshed.called).to.be.false;
+      describe('success', function () {
+        beforeEach(function () {
+          $httpBackend.expectPOST(
+              TokenAuthConfig.getApiEndpointRefresh(),
+              {token: 'sometoken'})
+            .respond(200, {token: 'someothertoken'});
+          AuthService.refreshToken();
+        });
+
+        it('calls tokenRefreshed', function () {
+          $httpBackend.flush();
+          expect(AuthService.tokenRefreshed.calledWith({token: 'someothertoken'})).to.be.true;
+          expect(AuthService.tokenRefreshError.called).to.be.false;
+        });
+      });
+
+      describe('error', function () {
+        beforeEach(function () {
+          $httpBackend.expectPOST(
+              TokenAuthConfig.getApiEndpointRefresh(),
+              {token: 'sometoken'})
+            .respond(403, {token: 'someothertoken'});
+          AuthService.refreshToken();
+        });
+
+        it('calls tokenRefreshError', function () {
+          $httpBackend.flush();
+          expect(AuthService.tokenRefreshError.called).to.be.true;
+          expect(AuthService.tokenRefreshed.called).to.be.false;
+        });
       });
     });
   });

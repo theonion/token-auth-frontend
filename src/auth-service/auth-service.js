@@ -6,8 +6,10 @@ angular.module('tokenAuth.authService', [
   'LocalStorageModule'
 ])
   .service('AuthService',
-  ['$rootScope', '$location', '$http', 'HttpRequestBuffer', 'localStorageService', /*'AlertService',*/ 'TokenAuthConfig',
-  function ($rootScope, $location, $http, HttpRequestBuffer, localStorageService, /*AlertService,*/ TokenAuthConfig) {
+  ['$q', '$rootScope', '$location', '$http', 'HttpRequestBuffer', 'localStorageService',
+      /*'AlertService',*/ 'TokenAuthConfig',
+  function ($q, $rootScope, $location, $http, HttpRequestBuffer, localStorageService,
+        /*AlertService,*/ TokenAuthConfig) {
     var service = {};
 
     service.login = function (username, password) {
@@ -33,13 +35,25 @@ angular.module('tokenAuth.authService', [
     };
 
     service.refreshToken = function () {
+      var deferred = $q.defer();
       var token = localStorageService.get(TokenAuthConfig.getTokenKey());
-      return $http.post(
+
+      deferred.promise
+        .then(service.tokenRefreshed)
+        .catch(service.tokenRefreshError);
+
+      if (token) {
+        $http.post(
           TokenAuthConfig.getApiEndpointRefresh(),
           {token: token},
           {ignoreAuthModule: true})
-        .success(service.tokenRefreshed)
-        .error(service.tokenRefreshError);
+        .success(deferred.resolve)
+        .error(deferred.reject);
+      } else {
+        deferred.reject();
+      }
+
+      return deferred.promise;
     };
 
     service.tokenRefreshed = function (response) {
