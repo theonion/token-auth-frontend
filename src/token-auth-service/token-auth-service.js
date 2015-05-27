@@ -19,10 +19,13 @@ angular.module('tokenAuth.authService', [
         .then(service.loginSuccess)
         .catch(service.loginError);
 
-      $http.post(TokenAuthConfig.getApiEndpointAuth(), {
-        username: username,
-        password: password
-      })
+      $http.post(
+        TokenAuthConfig.getApiEndpointAuth(), {
+          username: username,
+          password: password
+        }, {
+          ignoreAuthModule: true
+        })
       .success(deferred.resolve)
       .error(deferred.reject);
 
