@@ -1,14 +1,15 @@
 'use strict';
 
-describe('Directive: LoginForm', function () {
+describe('Directive: TokenAuthLoginForm', function () {
   var $scope;
   var promiseStub;
   var $httpBackend;
   var $location;
-  var AuthService;
+  var TokenAuthService;
   // var AlertService;
   var TokenAuthCurrentUser;
   // var BettyService;
+  var afterLoginPath = '/some/path';
 
   promiseStub = sinon.stub();
   promiseStub.abort = function () {};
@@ -21,15 +22,16 @@ describe('Directive: LoginForm', function () {
 
   beforeEach(function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
+      TokenAuthConfigProvider.setAfterLoginPath(afterLoginPath);
       TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/logo.png');
       TokenAuthConfigProvider.setApiHost('http://some.api.host');
       TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
     });
 
-    inject(function (_AuthService_, /*_AlertService_,*/ _$httpBackend_, _TokenAuthCurrentUser_,
+    inject(function (_TokenAuthService_, /*_AlertService_,*/ _$httpBackend_, _TokenAuthCurrentUser_,
         _$location_, /*_BettyService_,*/ $compile, $rootScope) {
-      AuthService = _AuthService_;
+      TokenAuthService = _TokenAuthService_;
       // AlertService = _AlertService_;
       $httpBackend = _$httpBackend_;
       $location = _$location_;
@@ -37,7 +39,7 @@ describe('Directive: LoginForm', function () {
       // BettyService = _BettyService_;
 
       var $directiveScope = $rootScope.$new();
-      var element = $compile('<login-form></login-form>')($directiveScope);
+      var element = $compile('<token-auth-login-form></token-auth-login-form>')($directiveScope);
       $directiveScope.$digest();
       $scope = element.isolateScope();
     });
@@ -82,27 +84,27 @@ describe('Directive: LoginForm', function () {
 
     describe('without username', function () {
       beforeEach(function () {
-        sinon.stub(AuthService, 'login', promiseStub);
+        sinon.stub(TokenAuthService, 'login', promiseStub);
         $scope.username = '';
         $scope.password = 'somepassword';
         $scope.submitLogin();
       });
 
       it('does not try to login', function () {
-        expect(AuthService.login.called).to.be.false;
+        expect(TokenAuthService.login.called).to.be.false;
       });
     });
 
     describe('without password', function () {
       beforeEach(function () {
-        sinon.stub(AuthService, 'login', promiseStub);
+        sinon.stub(TokenAuthService, 'login', promiseStub);
         $scope.username = 'somename';
         $scope.password = '';
         $scope.submitLogin();
       });
 
       it('does not try to login', function () {
-        expect(AuthService.login.called).to.be.false;
+        expect(TokenAuthService.login.called).to.be.false;
       });
     });
 
@@ -110,7 +112,7 @@ describe('Directive: LoginForm', function () {
       beforeEach(function () {
         $scope.username = 'somename';
         $scope.password = 'somepassword';
-        sinon.spy(AuthService, 'login');
+        sinon.spy(TokenAuthService, 'login');
         $httpBackend.expectPOST('/api/token/auth').respond(200, {token: 'greatsuccess'});
       });
 
@@ -121,7 +123,7 @@ describe('Directive: LoginForm', function () {
 
       it('logs in through the auth service with the username and password', function () {
         $scope.submitLogin();
-        expect(AuthService.login.calledWith('somename', 'somepassword')).to.be.true;
+        expect(TokenAuthService.login.calledWith('somename', 'somepassword')).to.be.true;
       });
 
       describe('error', function () {
@@ -152,7 +154,7 @@ describe('Directive: LoginForm', function () {
     });
 
     it('redirects the user to the cms root path', function () {
-      expect($location.path.calledWith('cms/')).to.be.true;
+      expect($location.path.calledWith(afterLoginPath)).to.be.true;
     });
 
     it('updates the betty config', function () {

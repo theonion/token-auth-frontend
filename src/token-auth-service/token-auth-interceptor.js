@@ -4,7 +4,7 @@ angular.module('tokenAuth.authInterceptor', [
   'tokenAuth.authService',
   'tokenAuth.httpRequestBuffer'
 ])
-  .factory('AuthInterceptor',
+  .factory('TokenAuthInterceptor',
   ['$q', '$location', '$injector', 'localStorageService', 'HttpRequestBuffer',
     'TokenAuthConfig',
   function ($q, $location, $injector, localStorageService, HttpRequestBuffer,
@@ -29,8 +29,8 @@ angular.module('tokenAuth.authInterceptor', [
           if (response.status === 403 || response.status === 401) {
             var deferred = $q.defer();
             HttpRequestBuffer.append(response.config, deferred);
-            var AuthService = $injector.get('AuthService');
-            AuthService.refreshToken();
+            var TokenAuthService = $injector.get('TokenAuthService');
+            TokenAuthService.refreshToken();
           }
         }
       }

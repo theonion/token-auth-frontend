@@ -5,7 +5,7 @@ angular.module('tokenAuth.authService', [
   'tokenAuth.config',
   'LocalStorageModule'
 ])
-  .service('AuthService',
+  .service('TokenAuthService',
   ['$q', '$rootScope', '$location', '$http', 'HttpRequestBuffer', 'localStorageService',
       /*'AlertService',*/ 'TokenAuthConfig',
   function ($q, $rootScope, $location, $http, HttpRequestBuffer, localStorageService,

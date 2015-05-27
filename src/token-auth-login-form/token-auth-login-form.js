@@ -5,11 +5,11 @@ angular.module('tokenAuth.loginForm', [
   'tokenAuth.currentUser',
   'tokenAuth.templates'
 ])
-  .directive('loginForm', [function () {
+  .directive('tokenAuthLoginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'AuthService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
-        function ($scope, $location, AuthService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
+        ['$scope', '$location', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
+        function ($scope, $location, TokenAuthService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -22,7 +22,7 @@ angular.module('tokenAuth.loginForm', [
             $scope.submitted = 'submitted';
             // AlertService.clear();
             if(!_.isEmpty($scope.username) && !_.isEmpty($scope.password)) {
-              AuthService.login($scope.username, $scope.password)
+              TokenAuthService.login($scope.username, $scope.password)
                 .then($scope.userLoggedIn);
             }
           };
@@ -30,13 +30,13 @@ angular.module('tokenAuth.loginForm', [
           $scope.userLoggedIn = function () {
             TokenAuthCurrentUser.setCurrentUser($scope.username);
             // BettyService.updateBettyConfig();
-            $location.path('cms/');
+            $location.path(TokenAuthConfig.getAfterLoginPath());
           };
 
           $scope.init();
         }],
       restrict: 'E',
       scope: {},
-      templateUrl: 'login-form/login-form.html'
+      templateUrl: 'token-auth-login-form/token-auth-login-form.html'
     };
   }]);

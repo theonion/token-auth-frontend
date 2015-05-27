@@ -2,12 +2,21 @@
 
 angular.module('tokenAuth.config', [])
   .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
+    var afterLoginPath = '/';
     var apiEndpointAuth = '/api/token/auth';
     var apiEndpointRefresh = '/api/token/refresh';
     var apiHost = '';
     var loginPagePath = '';
     var logoUrl = '';
     var tokenKey = 'authToken';
+
+    this.setAfterLoginPath = function (value) {
+      if (typeof(value) === 'string') {
+        afterLoginPath = value;
+      } else {
+        throw new TypeError('TokenAuthConfig.afterLoginPath must be a string!');
+      }
+    };
 
     this.setApiEndpointAuth = function (value) {
       if (typeof(value) === 'string') {
@@ -59,6 +68,9 @@ angular.module('tokenAuth.config', [])
 
     this.$get = function () {
       return {
+        getAfterLoginPath: function () {
+          return afterLoginPath;
+        },
         getApiEndpointAuth: function () {
           return apiHost + apiEndpointAuth;
         },
