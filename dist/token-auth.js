@@ -249,10 +249,12 @@ angular.module('tokenAuth.authInterceptor', [
       return config;
     };
 
-    factory.response = function () {
+    factory.response = function (response) {
       if (localStorageService.get(TokenAuthConfig.getTokenKey())) {
         TokenAuthConfig.interceptSuccessCallback();
       }
+
+      return response;
     };
 
     factory.responseError = function (response) {
