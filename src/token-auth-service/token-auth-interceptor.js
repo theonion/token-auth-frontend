@@ -3,7 +3,8 @@
 angular.module('tokenAuth.authInterceptor', [
   'tokenAuth.authService',
   'tokenAuth.config',
-  'tokenAuth.httpRequestBuffer'
+  'tokenAuth.httpRequestBuffer',
+  'LocalStorageModule'
 ])
   .factory('TokenAuthInterceptor',
   ['$q', '$location', '$injector', 'localStorageService', 'HttpRequestBuffer',
@@ -32,12 +33,6 @@ angular.module('tokenAuth.authInterceptor', [
       }
 
       return config;
-    };
-
-    factory.response = function () {
-      if (localStorageService.get(TokenAuthConfig.getTokenKey())) {
-        TokenAuthConfig.interceptSuccessCallback();
-      }
     };
 
     factory.responseError = function (response) {
