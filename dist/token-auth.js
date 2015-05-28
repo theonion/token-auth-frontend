@@ -334,8 +334,9 @@ angular.module('tokenAuth.authService', [
 
 // Source: .tmp/scripts/token-auth.js
 angular.module('tokenAuth', [
-  'tokenAuth.loginForm',
-  'tokenAuth.authInterceptor'
+  'tokenAuth.authInterceptor',
+  'tokenAuth.config',
+  'tokenAuth.loginForm'
 ]);
 
 // Source: .tmp/templates.js
