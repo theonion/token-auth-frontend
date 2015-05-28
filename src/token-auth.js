@@ -1,6 +1,7 @@
 'use strict';
 
 angular.module('tokenAuth', [
-  'tokenAuth.loginForm',
-  'tokenAuth.authInterceptor'
+  'tokenAuth.authInterceptor',
+  'tokenAuth.config',
+  'tokenAuth.loginForm'
 ]);
