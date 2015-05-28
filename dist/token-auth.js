@@ -10,8 +10,6 @@ angular.module('tokenAuth.config', [])
     var apiEndpointRefresh = '/api/token/refresh';
     // host where auth endpoints are located
     var apiHost = '';
-    // callback called when an authorized request comes back
-    var interceptSuccessCallback = function () {};
     // callback called on successful login
     var loginCallback = function () {};
     // path to login page
@@ -52,14 +50,6 @@ angular.module('tokenAuth.config', [])
         apiHost = value;
       } else {
         throw new TypeError('TokenAuthConfig.apiHost must be a string!');
-      }
-    };
-
-    this.setInterceptSuccessCallback = function (func) {
-      if (typeof(func) === 'function') {
-        interceptSuccessCallback = func;
-      } else {
-        throw new TypeError('TokenAuthConfig.interceptSuccessCallback must be a function!');
       }
     };
 
@@ -123,7 +113,6 @@ angular.module('tokenAuth.config', [])
         getTokenKey: function () {
           return tokenKey;
         },
-        interceptSuccessCallback: interceptSuccessCallback,
         loginCallback: loginCallback,
         logoutCallback: logoutCallback
      };
@@ -218,7 +207,8 @@ angular.module('tokenAuth.httpRequestBuffer', [])
 angular.module('tokenAuth.authInterceptor', [
   'tokenAuth.authService',
   'tokenAuth.config',
-  'tokenAuth.httpRequestBuffer'
+  'tokenAuth.httpRequestBuffer',
+  'LocalStorageModule'
 ])
   .factory('TokenAuthInterceptor',
   ['$q', '$location', '$injector', 'localStorageService', 'HttpRequestBuffer',
@@ -247,14 +237,6 @@ angular.module('tokenAuth.authInterceptor', [
       }
 
       return config;
-    };
-
-    factory.response = function (response) {
-      if (localStorageService.get(TokenAuthConfig.getTokenKey())) {
-        TokenAuthConfig.interceptSuccessCallback();
-      }
-
-      return response;
     };
 
     factory.responseError = function (response) {
