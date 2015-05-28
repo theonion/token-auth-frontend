@@ -44,13 +44,16 @@ Angular library for token auth with [django-rest-framework-jwt](https://github.c
 5. Configure ```TokenAuthConfig``` itself:
   ```javascript
   angular.module('tokenAuth.config')
-    .config(function (TokenAuthConfigProvider) {
-      TokenAuthConfigProvider.setLogoUrl('myLogo.png');
-      TokenAuthConfigProvider.setApiHost('base.url.for.api.with.drf.token.auth.com');
-      TokenAuthConfigProvider.setApiEndpointAuth('/authentication/endpoint/provided/by/api');
-      TokenAuthConfigProvider.setApiEndpointRefresh('/token/refresh/endpoint/provied/by/api');
-      TokenAuthConfigProvider.setLoginPagePath('/where/the/login/page/is/hosted');
-    });
+    .config([
+      'TokenAuthConfigProvider',
+      function (TokenAuthConfigProvider) {
+        TokenAuthConfigProvider.setLogoUrl('myLogo.png');
+        TokenAuthConfigProvider.setApiHost('base.url.for.api.with.drf.token.auth.com');
+        TokenAuthConfigProvider.setApiEndpointAuth('/authentication/endpoint/provided/by/api');
+        TokenAuthConfigProvider.setApiEndpointRefresh('/token/refresh/endpoint/provied/by/api');
+        TokenAuthConfigProvider.setLoginPagePath('/where/the/login/page/is/hosted');
+      }
+    ]);
   ```
 
 6. Fire up your angular app along with the server hosting drf-jwt and watch the token auth magic happen before your very eyes.
