@@ -7,9 +7,7 @@ describe('Directive: TokenAuthLoginForm', function () {
   var $location;
   var TokenAuthService;
   // var AlertService;
-  var TokenAuthCurrentUser;
   // var BettyService;
-  var afterLoginPath = '/some/path';
 
   promiseStub = sinon.stub();
   promiseStub.abort = function () {};
@@ -22,20 +20,19 @@ describe('Directive: TokenAuthLoginForm', function () {
 
   beforeEach(function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
-      TokenAuthConfigProvider.setAfterLoginPath(afterLoginPath);
+      
       TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/logo.png');
       TokenAuthConfigProvider.setApiHost('http://some.api.host');
       TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
     });
 
-    inject(function (_TokenAuthService_, /*_AlertService_,*/ _$httpBackend_, _TokenAuthCurrentUser_,
+    inject(function (_TokenAuthService_, /*_AlertService_,*/ _$httpBackend_,
         _$location_, /*_BettyService_,*/ $compile, $rootScope) {
       TokenAuthService = _TokenAuthService_;
       // AlertService = _AlertService_;
       $httpBackend = _$httpBackend_;
       $location = _$location_;
-      TokenAuthCurrentUser = _TokenAuthCurrentUser_;
       // BettyService = _BettyService_;
 
       var $directiveScope = $rootScope.$new();
@@ -143,18 +140,8 @@ describe('Directive: TokenAuthLoginForm', function () {
   describe('#userLoggedIn', function () {
     beforeEach(function () {
       $scope.username = 'cnorris';
-      sinon.stub(TokenAuthCurrentUser, 'setCurrentUser');
-      sinon.stub($location, 'path');
       // sinon.stub(BettyService, 'updateBettyConfig');
       $scope.userLoggedIn();
-    });
-
-    it('sets the currently logged in user', function () {
-      expect(TokenAuthCurrentUser.setCurrentUser.calledWith('cnorris')).to.be.true;
-    });
-
-    it('redirects the user to the cms root path', function () {
-      expect($location.path.calledWith(afterLoginPath)).to.be.true;
     });
 
     it('updates the betty config', function () {

@@ -2,14 +2,13 @@
 
 angular.module('tokenAuth.loginForm', [
   'tokenAuth.authService',
-  'tokenAuth.currentUser',
   'tokenAuth.templates'
 ])
   .directive('tokenAuthLoginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
-        function ($scope, $location, TokenAuthService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
+        ['$scope', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService', BettyService',*/
+        function ($scope, TokenAuthService, TokenAuthConfig /*, AlertService, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -28,9 +27,7 @@ angular.module('tokenAuth.loginForm', [
           };
 
           $scope.userLoggedIn = function () {
-            TokenAuthCurrentUser.setCurrentUser($scope.username);
             // BettyService.updateBettyConfig();
-            $location.path(TokenAuthConfig.getAfterLoginPath());
           };
 
           $scope.init();

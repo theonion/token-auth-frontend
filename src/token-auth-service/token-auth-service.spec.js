@@ -10,7 +10,10 @@ describe('Service: TokenAuthService', function () {
   var TokenAuthService;
   // var alertService;
   var TokenAuthConfig;
+  var afterLoginPath = '/some/path';
   var loginPagePath = '/cms/login';
+  var loginCallback;
+  var logoutCallback;
 
   beforeEach(function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
@@ -19,6 +22,13 @@ describe('Service: TokenAuthService', function () {
       TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
       TokenAuthConfigProvider.setLoginPagePath(loginPagePath);
+      TokenAuthConfigProvider.setAfterLoginPath(afterLoginPath);
+
+      loginCallback = sinon.stub();
+      TokenAuthConfigProvider.setLoginCallback(loginCallback);
+
+      logoutCallback = sinon.stub();
+      TokenAuthConfigProvider.setLogoutCallback(logoutCallback);
     });
 
     inject(function (_$httpBackend_, _$rootScope_, _$location_, _$window_,
@@ -88,12 +98,21 @@ describe('Service: TokenAuthService', function () {
 
   describe('#loginSuccess', function () {
     beforeEach(function () {
+      sinon.stub($location, 'path');
       sinon.stub(localStorageService, 'set');
       TokenAuthService.loginSuccess({token: '12345'});
     });
 
+    it('redirects the user to the cms root path', function () {
+      expect($location.path.calledWith(afterLoginPath)).to.be.true;
+    });
+
     it('stores the token using local storage service', function () {
       expect(localStorageService.set.calledWith(TokenAuthConfig.getTokenKey(), '12345')).to.be.true;
+    });
+
+    it('should call loginCallback', function () {
+      expect(loginCallback.calledOnce).to.be.true;
     });
   });
 
@@ -167,14 +186,20 @@ describe('Service: TokenAuthService', function () {
   });
 
   describe('#logout', function () {
-    it('removes the token from local storage and redirects to the login page', function () {
+    beforeEach(function () {
       sinon.stub(localStorageService, 'remove');
       sinon.stub($location, 'path');
 
       TokenAuthService.logout();
+    });
 
+    it('removes the token from local storage and redirects to the login page', function () {
       expect(localStorageService.remove.called).to.be.true;
       expect($location.path.calledWith(loginPagePath));
+    });
+
+    it('should call logoutCallback', function () {
+      expect(logoutCallback.calledOnce).to.be.true;
     });
   });
 

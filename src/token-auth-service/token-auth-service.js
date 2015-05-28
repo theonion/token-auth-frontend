@@ -34,6 +34,8 @@ angular.module('tokenAuth.authService', [
 
     service.loginSuccess = function (response) {
       localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
+      $location.path(TokenAuthConfig.getAfterLoginPath());
+      TokenAuthConfig.loginCallback();
     };
 
     service.loginError = function () {
@@ -43,6 +45,7 @@ angular.module('tokenAuth.authService', [
     service.logout = function () {
       localStorageService.remove(TokenAuthConfig.getTokenKey());
       $location.path(TokenAuthConfig.getLoginPagePath());
+      TokenAuthConfig.logoutCallback();
     };
 
     service.refreshToken = function () {

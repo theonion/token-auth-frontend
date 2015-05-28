@@ -6,8 +6,10 @@ angular.module('tokenAuth.config', [])
     var apiEndpointAuth = '/api/token/auth';
     var apiEndpointRefresh = '/api/token/refresh';
     var apiHost = '';
+    var loginCallback = function () {};
     var loginPagePath = '';
     var logoUrl = '';
+    var logoutCallback = function () {};
     var tokenKey = 'authToken';
 
     this.setAfterLoginPath = function (value) {
@@ -42,6 +44,14 @@ angular.module('tokenAuth.config', [])
       }
     };
 
+    this.setLoginCallback = function (func) {
+      if (typeof(func) === 'function') {
+        loginCallback = func;
+      } else {
+        throw new TypeError('TokenAuthConfig.loginCallback must be a function!');
+      }
+    };
+
     this.setLoginPagePath = function (value) {
       if (typeof(value) === 'string') {
         loginPagePath = value;
@@ -55,6 +65,14 @@ angular.module('tokenAuth.config', [])
         logoUrl = value;
       } else {
         throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
+      }
+    };
+
+    this.setLogoutCallback = function (func) {
+      if (typeof(func) === 'function') {
+        logoutCallback = func;
+      } else {
+        throw new TypeError('TokenAuthConfig.logoutCallback must be a function!');
       }
     };
 
@@ -85,7 +103,9 @@ angular.module('tokenAuth.config', [])
         },
         getTokenKey: function () {
           return tokenKey;
-        }
+        },
+        loginCallback: loginCallback,
+        logoutCallback: logoutCallback
      };
     };
   });
