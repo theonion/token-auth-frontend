@@ -17,10 +17,6 @@ angular.module('tokenAuth.authInterceptor', [
       config.headers = config.headers || {};
       var token = localStorageService.get(TokenAuthConfig.getTokenKey());
 
-      // make this request abortable
-      var abort = $q.defer();
-      config.timeout = abort.promise;
-
       // check if we have a token, if not, prevent request from firing, send user to login
       if (token) {
         var isBettyCropperRequest = _.has(config.headers, 'X-Betty-Api-Key');
@@ -29,6 +25,8 @@ angular.module('tokenAuth.authInterceptor', [
         }
       } else if (!(config.ignoreAuthModule || config.headers.ignoreAuthModule)) {
         // abort requests where there's no token
+        var abort = $q.defer();
+        config.timeout = abort.promise;
         abort.resolve();
         $location.path(TokenAuthConfig.getLoginPagePath());
       }

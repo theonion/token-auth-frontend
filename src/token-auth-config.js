@@ -55,7 +55,7 @@ angular.module('tokenAuth.config', [])
       }
     };
 
-    this.interceptSuccessCallback = function (func) {
+    this.setInterceptSuccessCallback = function (func) {
       if (typeof(func) === 'function') {
         interceptSuccessCallback = func;
       } else {
