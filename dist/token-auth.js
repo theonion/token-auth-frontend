@@ -2,14 +2,25 @@
 // Source: .tmp/scripts/token-auth-config.js
 angular.module('tokenAuth.config', [])
   .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
+    // page to route to after a successful login
     var afterLoginPath = '/';
+    // endpoint for token auth
     var apiEndpointAuth = '/api/token/auth';
+    // endpoint for token refresh
     var apiEndpointRefresh = '/api/token/refresh';
+    // host where auth endpoints are located
     var apiHost = '';
+    // callback called when an authorized request comes back
+    var interceptSuccessCallback = function () {};
+    // callback called on successful login
     var loginCallback = function () {};
+    // path to login page
     var loginPagePath = '';
+    // url for logo to display on login page
     var logoUrl = '';
+    // callback called on successful logout
     var logoutCallback = function () {};
+    // local storage key for token
     var tokenKey = 'authToken';
 
     this.setAfterLoginPath = function (value) {
@@ -41,6 +52,14 @@ angular.module('tokenAuth.config', [])
         apiHost = value;
       } else {
         throw new TypeError('TokenAuthConfig.apiHost must be a string!');
+      }
+    };
+
+    this.interceptSuccessCallback = function (func) {
+      if (typeof(func) === 'function') {
+        interceptSuccessCallback = func;
+      } else {
+        throw new TypeError('TokenAuthConfig.interceptSuccessCallback must be a function!');
       }
     };
 
@@ -104,6 +123,7 @@ angular.module('tokenAuth.config', [])
         getTokenKey: function () {
           return tokenKey;
         },
+        interceptSuccessCallback: interceptSuccessCallback,
         loginCallback: loginCallback,
         logoutCallback: logoutCallback
      };
@@ -197,6 +217,7 @@ angular.module('tokenAuth.httpRequestBuffer', [])
 // Source: .tmp/scripts/token-auth-service/token-auth-interceptor.js
 angular.module('tokenAuth.authInterceptor', [
   'tokenAuth.authService',
+  'tokenAuth.config',
   'tokenAuth.httpRequestBuffer'
 ])
   .factory('TokenAuthInterceptor',
@@ -228,6 +249,12 @@ angular.module('tokenAuth.authInterceptor', [
       }
 
       return config;
+    };
+
+    factory.response = function () {
+      if (localStorageService.get(TokenAuthConfig.getTokenKey())) {
+        TokenAuthConfig.interceptSuccessCallback();
+      }
     };
 
     factory.responseError = function (response) {
