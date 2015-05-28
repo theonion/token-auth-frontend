@@ -1,28 +1,4 @@
 'use strict';
-// Source: .tmp/scripts/current-user/current-user.js
-angular.module('tokenAuth.currentUser', [
-  'LocalStorageModule'
-])
-  .service('TokenAuthCurrentUser',
-    ['localStorageService', '$location',
-    function (localStorageService, $location) {
-      this.currentUser = null;
-      this.getCurrentUser = function () {
-        return localStorageService.get('currentUser');
-      };
-
-      this.setCurrentUser = function (newCurrentUser) {
-        localStorageService.set('currentUser', newCurrentUser);
-      };
-
-      this.logout = function () {
-        this.currentUser = null;
-        localStorageService.remove('authToken');
-        localStorageService.remove('currentUser');
-        $location.path('cms/login/');
-      };
-    }]);
-
 // Source: .tmp/scripts/token-auth-config.js
 angular.module('tokenAuth.config', [])
   .provider('TokenAuthConfig', function TokenAuthConfigProvider () {
@@ -30,8 +6,10 @@ angular.module('tokenAuth.config', [])
     var apiEndpointAuth = '/api/token/auth';
     var apiEndpointRefresh = '/api/token/refresh';
     var apiHost = '';
+    var loginCallback = function () {};
     var loginPagePath = '';
     var logoUrl = '';
+    var logoutCallback = function () {};
     var tokenKey = 'authToken';
 
     this.setAfterLoginPath = function (value) {
@@ -66,6 +44,14 @@ angular.module('tokenAuth.config', [])
       }
     };
 
+    this.setLoginCallback = function (func) {
+      if (typeof(func) === 'function') {
+        loginCallback = func;
+      } else {
+        throw new TypeError('TokenAuthConfig.loginCallback must be a function!');
+      }
+    };
+
     this.setLoginPagePath = function (value) {
       if (typeof(value) === 'string') {
         loginPagePath = value;
@@ -79,6 +65,14 @@ angular.module('tokenAuth.config', [])
         logoUrl = value;
       } else {
         throw new TypeError('TokenAuthConfig.logoUrl must be a string!');
+      }
+    };
+
+    this.setLogoutCallback = function (func) {
+      if (typeof(func) === 'function') {
+        logoutCallback = func;
+      } else {
+        throw new TypeError('TokenAuthConfig.logoutCallback must be a function!');
       }
     };
 
@@ -109,7 +103,9 @@ angular.module('tokenAuth.config', [])
         },
         getTokenKey: function () {
           return tokenKey;
-        }
+        },
+        loginCallback: loginCallback,
+        logoutCallback: logoutCallback
      };
     };
   });
@@ -117,14 +113,13 @@ angular.module('tokenAuth.config', [])
 // Source: .tmp/scripts/token-auth-login-form/token-auth-login-form.js
 angular.module('tokenAuth.loginForm', [
   'tokenAuth.authService',
-  'tokenAuth.currentUser',
   'tokenAuth.templates'
 ])
   .directive('tokenAuthLoginForm', [function () {
     return {
       controller:
-        ['$scope', '$location', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService',*/ 'TokenAuthCurrentUser', /*'BettyService',*/
-        function ($scope, $location, TokenAuthService, TokenAuthConfig, /*AlertService,*/ TokenAuthCurrentUser /*, BettyService*/) {
+        ['$scope', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService', BettyService',*/
+        function ($scope, TokenAuthService, TokenAuthConfig /*, AlertService, BettyService*/) {
 
           $scope.init = function () {
             $scope.username = '';
@@ -143,9 +138,7 @@ angular.module('tokenAuth.loginForm', [
           };
 
           $scope.userLoggedIn = function () {
-            TokenAuthCurrentUser.setCurrentUser($scope.username);
             // BettyService.updateBettyConfig();
-            $location.path(TokenAuthConfig.getAfterLoginPath());
           };
 
           $scope.init();
@@ -289,6 +282,8 @@ angular.module('tokenAuth.authService', [
 
     service.loginSuccess = function (response) {
       localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
+      $location.path(TokenAuthConfig.getAfterLoginPath());
+      TokenAuthConfig.loginCallback();
     };
 
     service.loginError = function () {
@@ -298,6 +293,7 @@ angular.module('tokenAuth.authService', [
     service.logout = function () {
       localStorageService.remove(TokenAuthConfig.getTokenKey());
       $location.path(TokenAuthConfig.getLoginPagePath());
+      TokenAuthConfig.logoutCallback();
     };
 
     service.refreshToken = function () {
