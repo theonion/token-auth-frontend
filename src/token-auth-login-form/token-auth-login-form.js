@@ -7,10 +7,13 @@ angular.module('tokenAuth.loginForm', [
   .directive('tokenAuthLoginForm', [function () {
     return {
       controller:
-        ['$scope', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService', BettyService',*/
-        function ($scope, TokenAuthService, TokenAuthConfig /*, AlertService, BettyService*/) {
+        ['$location', '$scope', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService', BettyService',*/
+        function ($location, $scope, TokenAuthService, TokenAuthConfig /*, AlertService, BettyService*/) {
 
           $scope.init = function () {
+            // check if user is already authenticated
+            TokenAuthService.verifyToken();
+
             $scope.username = '';
             $scope.password = '';
             $scope.submitted = '';

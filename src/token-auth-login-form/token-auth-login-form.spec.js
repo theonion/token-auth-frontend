@@ -20,7 +20,7 @@ describe('Directive: TokenAuthLoginForm', function () {
 
   beforeEach(function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
-      
+
       TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/logo.png');
       TokenAuthConfigProvider.setApiHost('http://some.api.host');
       TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
@@ -44,6 +44,8 @@ describe('Directive: TokenAuthLoginForm', function () {
 
   describe('#init', function () {
     beforeEach(function () {
+      sinon.stub(TokenAuthService, 'verifyToken');
+
       $scope.username = 'cnorris';
       $scope.password = 'tearscurecancer';
       $scope.submitted = 'submitted';
@@ -65,6 +67,10 @@ describe('Directive: TokenAuthLoginForm', function () {
 
     it('sets the logo url based on the global constant', function () {
       expect($scope.LOGO_URL).to.eql('http://some.logo.url/logo.png');
+    });
+
+    it('verifies authentication', function () {
+      expect(TokenAuthService.verifyToken.calledOnce).to.be.true;
     });
   });
 

@@ -96,6 +96,14 @@ describe('Service: TokenAuthService', function () {
     });
   });
 
+  describe('#verifySuccess', function () {
+    it('redirects user to cms root path', function () {
+      sinon.stub($location, 'path');
+      TokenAuthService.verifySuccess();
+      expect($location.path.calledWith(afterLoginPath)).to.be.true;
+    });
+  });
+
   describe('#loginSuccess', function () {
     beforeEach(function () {
       sinon.stub($location, 'path');
@@ -201,6 +209,41 @@ describe('Service: TokenAuthService', function () {
     it('should call logoutCallback', function () {
       expect(logoutCallback.calledOnce).to.be.true;
     });
+  });
+
+  describe('$tokenVerify', function () {
+
+    it('should call verifySuccess on success', function () {
+      $httpBackend.expectPOST(
+          TokenAuthConfig.getApiEndpointVerify(),
+          {token: 'sometoken'})
+        .respond(200);
+
+      sinon.stub(TokenAuthService, 'verifySuccess');
+      sinon.stub(localStorageService, 'get').returns('sometoken');
+
+      var success = sinon.stub();
+
+      TokenAuthService.verifyToken()
+        .then(success);
+
+      $httpBackend.flush();
+
+      expect(success.calledOnce).to.be.true;
+      expect(TokenAuthService.verifySuccess.calledOnce).to.be.true;
+    });
+
+    it('should return a deferred that is rejected on failure', function () {
+      var failure = sinon.stub();
+
+      TokenAuthService.verifyToken()
+        .catch(failure);
+
+      $rootScope.$digest();
+
+      expect(failure.calledOnce).to.be.true;
+    });
+
   });
 
   describe('#tokenRefreshed', function () {

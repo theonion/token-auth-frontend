@@ -12,6 +12,31 @@ angular.module('tokenAuth.authService', [
         /*AlertService,*/ TokenAuthConfig) {
     var service = {};
 
+    service.verifyToken = function () {
+      var deferred = $q.defer();
+      var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+
+      deferred.promise
+        .then(service.verifySuccess);
+
+      if (token) {
+        $http.post(
+          TokenAuthConfig.getApiEndpointVerify(),
+          {token: token},
+          {ignoreAuthModule: true})
+        .success(deferred.resolve)
+        .error(deferred.reject);
+      } else {
+        deferred.reject();
+      }
+
+      return deferred.promise;
+    };
+
+    service.verifySuccess = function () {
+      $location.path(TokenAuthConfig.getAfterLoginPath());
+    };
+
     service.login = function (username, password) {
       var deferred = $q.defer();
 
