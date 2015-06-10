@@ -39,7 +39,7 @@ angular.module('tokenAuth.authInterceptor', [
     };
 
     factory.responseError = function (response) {
-      if (response.config && TokenAuthConfig.shouldBeIntercepted(response.config)) {
+      if (response.config && TokenAuthConfig.shouldBeIntercepted(response.config.url)) {
         var ignoreAuthModule = response.config.ignoreAuthModule || response.config.headers.ignoreAuthModule;
         if (!ignoreAuthModule && (response.status === 403 || response.status === 401)) {
           var deferred = $q.defer();
