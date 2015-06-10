@@ -7,7 +7,7 @@
     "dist/login-form.js"
   ],
   "scripts": {
-    "test": "./node_modules/karma/bin/karma start ./test/karma.conf.js"
+    "test": "grunt karma"
   },
   "author": "The Onion Tech <tech@theonion.com> (https://github.com/theonion)",
   "license": "MIT",
