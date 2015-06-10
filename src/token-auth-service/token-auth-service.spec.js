@@ -4,7 +4,7 @@ describe('Service: TokenAuthService', function () {
   var $httpBackend;
   var $rootScope;
   var $location;
-  var HttpRequestBuffer;
+  var TokenAuthHttpRequestBuffer;
   var $window;
   var localStorageService;
   var TokenAuthService;
@@ -32,7 +32,7 @@ describe('Service: TokenAuthService', function () {
     });
 
     inject(function (_$httpBackend_, _$rootScope_, _$location_, _$window_,
-        _TokenAuthService_, /*_AlertService_,*/ _localStorageService_, _HttpRequestBuffer_,
+        _TokenAuthService_, /*_AlertService_,*/ _localStorageService_, _TokenAuthHttpRequestBuffer_,
         _TokenAuthConfig_) {
       $httpBackend = _$httpBackend_;
       $location = _$location_;
@@ -41,7 +41,7 @@ describe('Service: TokenAuthService', function () {
       localStorageService = _localStorageService_;
       $rootScope = _$rootScope_;
       $window = _$window_;
-      HttpRequestBuffer = _HttpRequestBuffer_;
+      TokenAuthHttpRequestBuffer = _TokenAuthHttpRequestBuffer_;
       TokenAuthConfig = _TokenAuthConfig_;
     });
   });
@@ -249,7 +249,7 @@ describe('Service: TokenAuthService', function () {
   describe('#tokenRefreshed', function () {
     beforeEach(function () {
       sinon.stub(localStorageService, 'set');
-      sinon.stub(HttpRequestBuffer, 'retryAll');
+      sinon.stub(TokenAuthHttpRequestBuffer, 'retryAll');
       TokenAuthService.tokenRefreshed({token: 'thetoken'});
     });
 
@@ -257,21 +257,21 @@ describe('Service: TokenAuthService', function () {
       expect(localStorageService.set.calledWith(TokenAuthConfig.getTokenKey(), 'thetoken')).to.be.true;
     });
 
-    it('tells the HttpRequestBuffer to retry all requests', function () {
-      expect(HttpRequestBuffer.retryAll.called).to.be.true;
+    it('tells the TokenAuthHttpRequestBuffer to retry all requests', function () {
+      expect(TokenAuthHttpRequestBuffer.retryAll.called).to.be.true;
     });
   });
 
   describe('#tokenRefreshError', function () {
     beforeEach(function () {
-      sinon.stub(HttpRequestBuffer, 'rejectAll');
+      sinon.stub(TokenAuthHttpRequestBuffer, 'rejectAll');
       // sinon.stub(alertService, 'error');
       sinon.stub($location, 'path');
       TokenAuthService.tokenRefreshError();
     });
 
     it('tells the request buffer to reject all pending requests', function () {
-      expect(HttpRequestBuffer.rejectAll.called).to.be.true;
+      expect(TokenAuthHttpRequestBuffer.rejectAll.called).to.be.true;
     });
 
     it('registers an error with the alert service', function () {

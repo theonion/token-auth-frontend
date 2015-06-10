@@ -7,9 +7,9 @@ angular.module('tokenAuth.authInterceptor', [
   'LocalStorageModule'
 ])
   .service('TokenAuthInterceptor', [
-    '$q', '$location', '$injector', 'localStorageService', 'HttpRequestBuffer',
+    '$q', '$location', '$injector', 'localStorageService', 'TokenAuthHttpRequestBuffer',
       'TokenAuthConfig',
-    function ($q, $location, $injector, localStorageService, HttpRequestBuffer,
+    function ($q, $location, $injector, localStorageService, TokenAuthHttpRequestBuffer,
       TokenAuthConfig) {
 
       var doIgnoreAuth = function (config) {
@@ -52,7 +52,7 @@ angular.module('tokenAuth.authInterceptor', [
 
           // append request to buffer to retry later
           var deferred = $q.defer();
-          HttpRequestBuffer.append(response.config, deferred);
+          TokenAuthHttpRequestBuffer.append(response.config, deferred);
 
           // attempt to refresh token
           var TokenAuthService = $injector.get('TokenAuthService');

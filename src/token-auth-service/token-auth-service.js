@@ -6,9 +6,9 @@ angular.module('tokenAuth.authService', [
   'LocalStorageModule'
 ])
   .service('TokenAuthService',
-  ['$q', '$rootScope', '$location', '$http', 'HttpRequestBuffer', 'localStorageService',
+  ['$q', '$rootScope', '$location', '$http', 'TokenAuthHttpRequestBuffer', 'localStorageService',
       /*'AlertService',*/ 'TokenAuthConfig',
-  function ($q, $rootScope, $location, $http, HttpRequestBuffer, localStorageService,
+  function ($q, $rootScope, $location, $http, TokenAuthHttpRequestBuffer, localStorageService,
         /*AlertService,*/ TokenAuthConfig) {
     var service = {};
 
@@ -97,11 +97,11 @@ angular.module('tokenAuth.authService', [
 
     service.tokenRefreshed = function (response) {
       localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
-      HttpRequestBuffer.retryAll();
+      TokenAuthHttpRequestBuffer.retryAll();
     };
 
     service.tokenRefreshError = function () {
-      HttpRequestBuffer.rejectAll();
+      TokenAuthHttpRequestBuffer.rejectAll();
       // AlertService.error('You failed to authenticate. Redirecting to login.', false);
       $location.path(TokenAuthConfig.getLoginPagePath());
     };
