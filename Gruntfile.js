@@ -22,12 +22,15 @@ module.exports = function (grunt) {
     grunt.file.mkdir('.tmp');
   });
 
+  grunt.registerTask('lint', [
+    'jscs',
+    'jshint'
+  ]);
+
   grunt.loadTasks('tasks');
 
   grunt.registerTask('build', [
-    // lint
-    'jscs',
-    'jshint',
+    'lint',
     // setup
     'clean',
     'mkdir:tmp',
