@@ -145,6 +145,22 @@ describe('Service: TokenAuthService', function () {
       expect(failure.calledOnce).to.be.true;
     });
 
+    it('should only do one refresh request at a time', function () {
+      localStorageService.get = sinon.stub().returns('sometoken');
+
+      TokenAuthService.refreshToken();
+      TokenAuthService.refreshToken();
+
+      // only a single request should come out of this
+      $httpBackend
+        .expectPOST(
+          TokenAuthConfig.getApiEndpointRefresh(),
+          {token: 'sometoken'}
+        )
+        .respond(200, {token: 'someothertoken'});
+      $httpBackend.flush();
+    });
+
     describe('with token', function () {
 
       beforeEach(function () {
@@ -212,11 +228,6 @@ describe('Service: TokenAuthService', function () {
   describe('tokenVerify', function () {
 
     it('should call verifySuccess on success', function () {
-      $httpBackend.expectPOST(
-          TokenAuthConfig.getApiEndpointVerify(),
-          {token: 'sometoken'})
-        .respond(200);
-
       sinon.stub(TokenAuthService, 'verifySuccess');
       sinon.stub(localStorageService, 'get').returns('sometoken');
 
@@ -225,6 +236,10 @@ describe('Service: TokenAuthService', function () {
       TokenAuthService.verifyToken()
         .then(success);
 
+      $httpBackend.expectPOST(
+          TokenAuthConfig.getApiEndpointVerify(),
+          {token: 'sometoken'})
+        .respond(200);
       $httpBackend.flush();
 
       expect(success.calledOnce).to.be.true;
@@ -234,10 +249,16 @@ describe('Service: TokenAuthService', function () {
     it('should return a deferred that is rejected on failure', function () {
       var failure = sinon.stub();
 
+      localStorageService.get = sinon.stub().returns('sometoken');
+
       TokenAuthService.verifyToken()
         .catch(failure);
 
-      $rootScope.$digest();
+      $httpBackend.expectPOST(
+          TokenAuthConfig.getApiEndpointVerify(),
+          {token: 'sometoken'})
+        .respond(400);
+      $httpBackend.flush();
 
       expect(failure.calledOnce).to.be.true;
     });

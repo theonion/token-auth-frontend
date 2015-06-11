@@ -128,30 +128,6 @@ describe('Directive: TokenAuthLoginForm', function () {
         $scope.submitLogin();
         expect(TokenAuthService.login.calledWith('somename', 'somepassword')).to.be.true;
       });
-
-      describe('error', function () {
-        beforeEach(function () {
-          $httpBackend.expectPOST('/api/token/auth').respond(403, {});
-          sinon.stub($scope, 'userLoggedIn');
-          $scope.submitLogin();
-        });
-
-        it('does not call the userLoggedIn function', function () {
-          expect($scope.userLoggedIn.called).to.be.false;
-        });
-      });
-    });
-  });
-
-  describe('#userLoggedIn', function () {
-    beforeEach(function () {
-      $scope.username = 'cnorris';
-      // sinon.stub(BettyService, 'updateBettyConfig');
-      $scope.userLoggedIn();
-    });
-
-    it('updates the betty config', function () {
-      // expect(BettyService.updateBettyConfig.called).to.be.true;
     });
   });
 });

@@ -7,20 +7,41 @@
     <form>
       <div class="login-input username">
         <label>Username</label>
-        <input type="text" class="form-control" ng-model="username" required>
-        <div class="alert alert-danger required-label" ng-class="submitted">Required</div>
+        <input
+            type="text"
+            class="form-control"
+            ng-model="username"
+            required>
+        <div
+            class="alert alert-danger required-label"
+            ng-class="submitted">
+          Required
+        </div>
       </div>
       <div class="login-input password">
         <label>Password</label>
-        <input type="password" class="form-control" ng-model="password" required>
-        <div class="alert alert-danger required-label" ng-class="submitted">Required</div>
+        <input
+            type="password"
+            class="form-control"
+            ng-model="password"
+            required>
+        <div
+            class="alert alert-danger required-label"
+            ng-class="submitted">
+          Required
+        </div>
       </div>
       <alertbar></alertbar>
-      <button class="btn add-btn btn-success" type="submit" ng-click="submitLogin()">
+      <button
+          class="btn add-btn btn-success"
+          type="submit"
+          ng-click="submitLogin()">
         <span>Sign in</span>
       </button>
     </form>
-    <a class="contact" href="mailto:webtech@theonion.com">
+    <a
+        class="contact"
+        href="mailto:webtech@theonion.com">
       <div class="question-mark">?</div>
       <div class="contact-tech">Contact Tech</div>
     </a>

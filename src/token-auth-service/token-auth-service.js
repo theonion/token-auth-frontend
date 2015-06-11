@@ -74,25 +74,31 @@ angular.module('tokenAuth.authService', [
       };
 
       this.refreshToken = function () {
-        var deferred = $q.defer();
-        var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+        if (!this.refreshTokenDeferred) {
+          this.refreshTokenDeferred = $q.defer();
 
-        deferred.promise
-          .then(this.tokenRefreshed.bind(this))
-          .catch(this.tokenRefreshError.bind(this));
+          var token = localStorageService.get(TokenAuthConfig.getTokenKey());
 
-        if (token) {
-          $http.post(
-            TokenAuthConfig.getApiEndpointRefresh(),
-            {token: token},
-            {ignoreAuthModule: true})
-          .success(deferred.resolve)
-          .error(deferred.reject);
-        } else {
-          deferred.reject();
+          this.refreshTokenDeferred.promise
+            .then(this.tokenRefreshed.bind(this))
+            .catch(this.tokenRefreshError.bind(this))
+            .finally(function () {
+              this.refreshTokenDeferred = null;
+            });
+
+          if (token) {
+            $http.post(
+              TokenAuthConfig.getApiEndpointRefresh(),
+              {token: token},
+              {ignoreAuthModule: true})
+            .success(this.refreshTokenDeferred.resolve)
+            .error(this.refreshTokenDeferred.reject);
+          } else {
+            this.refreshTokenDeferred.reject();
+          }
         }
 
-        return deferred.promise;
+        return this.refreshTokenDeferred.promise;
       };
 
       this.tokenRefreshed = function (response) {
