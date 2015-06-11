@@ -4,7 +4,6 @@ describe('Interceptor: TokenAuthInterceptor', function () {
 
   var $location;
   var $q;
-  var TokenAuthHttpRequestBuffer;
   var localStorageService;
   var TokenAuthConfig;
   var TokenAuthInterceptor;
@@ -15,12 +14,11 @@ describe('Interceptor: TokenAuthInterceptor', function () {
   beforeEach(function () {
     module('tokenAuth.authInterceptor');
 
-    inject(function (_$location_, _$q_, _localStorageService_, _TokenAuthHttpRequestBuffer_,
-        _TokenAuthConfig_, _TokenAuthInterceptor_, _TokenAuthService_) {
+    inject(function (_$location_, _$q_, _localStorageService_, _TokenAuthConfig_,
+        _TokenAuthInterceptor_, _TokenAuthService_) {
       $location = _$location_;
       $q = _$q_;
       localStorageService = _localStorageService_;
-      TokenAuthHttpRequestBuffer = _TokenAuthHttpRequestBuffer_;
       TokenAuthConfig = _TokenAuthConfig_;
       TokenAuthInterceptor = _TokenAuthInterceptor_;
       TokenAuthService = _TokenAuthService_;
@@ -114,12 +112,12 @@ describe('Interceptor: TokenAuthInterceptor', function () {
     });
 
     it('should add failures to request buffer and attempt token refresh', function () {
-      TokenAuthHttpRequestBuffer.append = sinon.spy();
+      TokenAuthService.bufferRequest = sinon.spy();
       TokenAuthService.refreshToken = sinon.spy();
 
       TokenAuthInterceptor.responseError(response);
 
-      expect(TokenAuthHttpRequestBuffer.append.withArgs(testRequestConfig).calledOnce).to.be.true;
+      expect(TokenAuthService.bufferRequest.withArgs(testRequestConfig).calledOnce).to.be.true;
       expect(TokenAuthService.refreshToken.calledOnce).to.be.true;
     });
 
@@ -132,7 +130,7 @@ describe('Interceptor: TokenAuthInterceptor', function () {
     });
 
     it('should be ignored when ignore flag is provided', function () {
-      TokenAuthHttpRequestBuffer.append = sinon.spy();
+      TokenAuthService.bufferRequest = sinon.spy();
       TokenAuthService.refreshToken = sinon.spy();
 
       // request config is undefined
@@ -148,34 +146,34 @@ describe('Interceptor: TokenAuthInterceptor', function () {
       response.config.headers = {ignoreAuthModule: true};
       TokenAuthInterceptor.responseError(response);
 
-      expect(TokenAuthHttpRequestBuffer.append.calledOnce).to.be.false;
+      expect(TokenAuthService.bufferRequest.calledOnce).to.be.false;
       expect(TokenAuthService.refreshToken.calledOnce).to.be.false;
     });
 
     it('should only handle 403 or 401 responses', function () {
       TokenAuthConfig.shouldBeIntercepted = sinon.stub().returns(true);
 
-      TokenAuthHttpRequestBuffer.append = sinon.spy();
+      TokenAuthService.bufferRequest = sinon.spy();
       TokenAuthService.refreshToken = sinon.spy();
 
       response.status = 403;
       TokenAuthInterceptor.responseError(response);
-      expect(TokenAuthHttpRequestBuffer.append.callCount).to.equal(1);
+      expect(TokenAuthService.bufferRequest.callCount).to.equal(1);
       expect(TokenAuthService.refreshToken.callCount).to.equal(1);
 
       response.status = 401;
       TokenAuthInterceptor.responseError(response);
-      expect(TokenAuthHttpRequestBuffer.append.callCount).to.equal(2);
+      expect(TokenAuthService.bufferRequest.callCount).to.equal(2);
       expect(TokenAuthService.refreshToken.callCount).to.equal(2);
 
       response.status = 400;
       TokenAuthInterceptor.responseError(response);
-      expect(TokenAuthHttpRequestBuffer.append.callCount).to.equal(2);
+      expect(TokenAuthService.bufferRequest.callCount).to.equal(2);
       expect(TokenAuthService.refreshToken.callCount).to.equal(2);
 
       response.status = 500;
       TokenAuthInterceptor.responseError(response);
-      expect(TokenAuthHttpRequestBuffer.append.callCount).to.equal(2);
+      expect(TokenAuthService.bufferRequest.callCount).to.equal(2);
       expect(TokenAuthService.refreshToken.callCount).to.equal(2);
     });
   });
