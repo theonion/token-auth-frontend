@@ -166,7 +166,7 @@ describe('Service: TokenAuthService', function () {
       beforeEach(function () {
         sinon.stub(localStorageService, 'get').returns('sometoken');
         sinon.stub(TokenAuthService, 'tokenRefreshed');
-        sinon.stub(TokenAuthService, 'tokenRefreshError');
+        sinon.stub(TokenAuthService, 'navToLogin');
       });
 
       it('should return a promise', function () {
@@ -185,7 +185,7 @@ describe('Service: TokenAuthService', function () {
         it('should call tokenRefreshed', function () {
           $httpBackend.flush();
           expect(TokenAuthService.tokenRefreshed.calledWith({token: 'someothertoken'})).to.be.true;
-          expect(TokenAuthService.tokenRefreshError.called).to.be.false;
+          expect(TokenAuthService.navToLogin.called).to.be.false;
         });
       });
 
@@ -198,9 +198,9 @@ describe('Service: TokenAuthService', function () {
           TokenAuthService.refreshToken();
         });
 
-        it('should call tokenRefreshError', function () {
+        it('should call navToLogin', function () {
           $httpBackend.flush();
-          expect(TokenAuthService.tokenRefreshError.called).to.be.true;
+          expect(TokenAuthService.navToLogin.called).to.be.true;
           expect(TokenAuthService.tokenRefreshed.called).to.be.false;
         });
       });
@@ -281,12 +281,12 @@ describe('Service: TokenAuthService', function () {
     });
   });
 
-  describe('tokenRefreshError', function () {
+  describe('navToLogin', function () {
     beforeEach(function () {
       sinon.stub(TokenAuthService, 'clearRequestBuffer');
       // sinon.stub(alertService, 'error');
       sinon.stub($location, 'path');
-      TokenAuthService.tokenRefreshError();
+      TokenAuthService.navToLogin();
     });
 
     it('should tell the request buffer to reject all pending requests', function () {

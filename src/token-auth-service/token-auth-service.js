@@ -81,7 +81,7 @@ angular.module('tokenAuth.authService', [
 
           this.refreshTokenDeferred.promise
             .then(this.tokenRefreshed.bind(this))
-            .catch(this.tokenRefreshError.bind(this))
+            .catch(this.navToLogin.bind(this))
             .finally(function () {
               this.refreshTokenDeferred = null;
             });
@@ -106,9 +106,8 @@ angular.module('tokenAuth.authService', [
         this.retryRequestBuffer();
       };
 
-      this.tokenRefreshError = function () {
+      this.navToLogin = function () {
         this.clearRequestBuffer();
-        // AlertService.error('You failed to authenticate. Redirecting to login.', false);
         $location.path(TokenAuthConfig.getLoginPagePath());
       };
 

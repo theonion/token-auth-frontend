@@ -133,6 +133,17 @@ angular.module('tokenAuth.config', [])
         loginCallback: loginCallback,
         logoutCallback: logoutCallback,
         /**
+         * Check if a url is a token auth url.
+         *
+         * @param {string} url - Url to test against token auth urls.
+         * @returns {boolean} true if url should be intercepted, false otherwise.
+         */
+        isTokenAuthUrl: function (url) {
+          return url.search(this.getApiEndpointAuth()) ||
+            url.search(this.getApiEndpointVerify()) ||
+            url.search(this.getApiEndpointRefresh());
+        },
+        /**
          * Check if a given url should be intercepted by this library's interceptor.
          *
          * @param {string} url - Url to test against matchers.

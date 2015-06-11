@@ -49,19 +49,20 @@ describe('Interceptor: TokenAuthInterceptor', function () {
       expect(testRequestConfig.headers.Authorization).to.equal('JWT ' + token);
     });
 
-    it('should abort when no token in session, set path to login page', function () {
+    it('should abort when no token in session, set path to login page, clear request buffer', function () {
       var loginPagePath = '/some/path/to/login';
 
+      $location.path = sinon.spy().withArgs(loginPagePath);
       localStorageService.get = sinon.stub().returns();
       TokenAuthConfig.shouldBeIntercepted = sinon.stub().returns(true);
       TokenAuthConfig.getLoginPagePath = sinon.stub().returns(loginPagePath);
-      $location.path = sinon.spy().withArgs(loginPagePath);
+      TokenAuthService.navToLogin = sinon.stub();
 
       TokenAuthInterceptor.request(testRequestConfig);
 
+      expect(TokenAuthService.navToLogin.calledOnce).to.be.true;
       expect(testRequestConfig.headers).to.be.undefined;
       expect(testRequestConfig.timeout).to.be.a(typeof($q.defer().promise));
-      expect($location.path.withArgs(loginPagePath).calledOnce).to.be.true;
 
       // test if abort has been resolved, so request is cancelled, status 1 === resolved
       expect(testRequestConfig.timeout.$$state.status).to.equal(1);

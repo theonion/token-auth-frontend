@@ -17,7 +17,7 @@ angular.module('tokenAuth.authInterceptor', [
       };
 
       this.request = function (config) {
-        // only deal with reqeusts if auth module is not ignored, and this is a url
+        // only deal with requests if auth module is not ignored, and this is a url
         //  to deal with
         if (!doIgnoreAuth(config) && TokenAuthConfig.shouldBeIntercepted(config.url)) {
 
@@ -33,7 +33,12 @@ angular.module('tokenAuth.authInterceptor', [
             var abort = $q.defer();
             config.timeout = abort.promise;
             abort.resolve();
-            $location.path(TokenAuthConfig.getLoginPagePath());
+
+            // need to inject service here, otherwise we get a circular $http dep
+            var TokenAuthService = $injector.get('TokenAuthService');
+
+            // navigate to login page
+            TokenAuthService.navToLogin();
           }
         }
 
