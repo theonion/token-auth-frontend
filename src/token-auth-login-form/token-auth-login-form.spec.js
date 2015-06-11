@@ -7,7 +7,6 @@ describe('Directive: TokenAuthLoginForm', function () {
   var $location;
   var TokenAuthService;
   // var AlertService;
-  // var BettyService;
 
   promiseStub = sinon.stub();
   promiseStub.abort = function () {};
@@ -28,12 +27,13 @@ describe('Directive: TokenAuthLoginForm', function () {
     });
 
     inject(function (_TokenAuthService_, /*_AlertService_,*/ _$httpBackend_,
-        _$location_, /*_BettyService_,*/ $compile, $rootScope) {
+        _$location_, $compile, $rootScope) {
       TokenAuthService = _TokenAuthService_;
       // AlertService = _AlertService_;
       $httpBackend = _$httpBackend_;
       $location = _$location_;
-      // BettyService = _BettyService_;
+
+      TokenAuthService.verifyToken = sinon.stub();
 
       var $directiveScope = $rootScope.$new();
       var element = $compile('<token-auth-login-form></token-auth-login-form>')($directiveScope);
@@ -42,36 +42,21 @@ describe('Directive: TokenAuthLoginForm', function () {
     });
   });
 
-  describe('#init', function () {
-    beforeEach(function () {
-      sinon.stub(TokenAuthService, 'verifyToken');
+  it('should have a scope initialization function', function () {
+    TokenAuthService.verifyToken = sinon.stub();
 
-      $scope.username = 'cnorris';
-      $scope.password = 'tearscurecancer';
-      $scope.submitted = 'submitted';
-      $scope.LOGO_URL = 'http://www.example.com/1.jpg';
-      $scope.init();
-    });
+    $scope.username = 'cnorris';
+    $scope.password = 'tearscurecancer';
+    $scope.submitted = 'submitted';
+    $scope.LOGO_URL = 'http://www.example.com/1.jpg';
 
-    it('clears the username', function () {
-      expect($scope.username).to.eql('');
-    });
+    $scope.init();
 
-    it('clears the password', function () {
-      expect($scope.password).to.eql('');
-    });
-
-    it('clears the submitted property', function () {
-      expect($scope.submitted).to.eql('');
-    });
-
-    it('sets the logo url based on the global constant', function () {
-      expect($scope.LOGO_URL).to.eql('http://some.logo.url/logo.png');
-    });
-
-    it('verifies authentication', function () {
-      expect(TokenAuthService.verifyToken.calledOnce).to.be.true;
-    });
+    expect($scope.username).to.eql('');
+    expect($scope.password).to.eql('');
+    expect($scope.submitted).to.eql('');
+    expect($scope.LOGO_URL).to.eql('http://some.logo.url/logo.png');
+    expect(TokenAuthService.verifyToken.calledOnce).to.be.true;
   });
 
   describe('#submitLogin', function () {

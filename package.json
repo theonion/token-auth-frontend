@@ -7,7 +7,7 @@
     "dist/login-form.js"
   ],
   "scripts": {
-    "test": "grunt karma"
+    "test": "grunt karma:unit"
   },
   "author": "The Onion Tech <tech@theonion.com> (https://github.com/theonion)",
   "license": "MIT",

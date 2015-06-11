@@ -47,7 +47,7 @@ module.exports = function (grunt) {
   ]);
 
   grunt.registerTask('release', [
-    'karma',
+    'karma:build',
     'build',
     'bump'
   ]);

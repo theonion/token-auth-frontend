@@ -4,7 +4,11 @@
 'use strict';
 
 module.exports = {
-  unit: {
+  options: {
     configFile: 'test/karma.conf.js'
-  }
+  },
+  build: {
+    singleRun: true
+  },
+  unit: {}
 };

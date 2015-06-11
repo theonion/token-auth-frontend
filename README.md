@@ -57,3 +57,9 @@ Angular library for token auth with [django-rest-framework-jwt](https://github.c
   ```
 
 6. Fire up your angular app along with the server hosting drf-jwt and watch the token auth magic happen before your very eyes.
+
+## Testing
+```bash
+$ npm install && bower install
+$ npm test
+```

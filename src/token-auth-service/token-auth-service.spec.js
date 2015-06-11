@@ -225,7 +225,7 @@ describe('Service: TokenAuthService', function () {
     });
   });
 
-  describe('tokenVerify', function () {
+  describe('verifyToken', function () {
 
     it('should call verifySuccess on success', function () {
       sinon.stub(TokenAuthService, 'verifySuccess');
