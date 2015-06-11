@@ -6,10 +6,8 @@ angular.module('tokenAuth.authInterceptor', [
   'LocalStorageModule'
 ])
   .service('TokenAuthInterceptor', [
-    '$q', '$location', '$injector', 'localStorageService', 'TokenAuthService',
-      'TokenAuthConfig',
-    function ($q, $location, $injector, localStorageService, TokenAuthService,
-      TokenAuthConfig) {
+    '$injector', '$q', '$location', 'localStorageService', 'TokenAuthConfig',
+    function ($injector, $q, $location, localStorageService, TokenAuthConfig) {
 
       var doIgnoreAuth = function (config) {
         return Boolean(
@@ -48,6 +46,9 @@ angular.module('tokenAuth.authInterceptor', [
         if (!doIgnoreAuth(response.config) &&
             TokenAuthConfig.shouldBeIntercepted(response.config.url) &&
             (response.status === 403 || response.status === 401)) {
+
+          // need to inject service here, otherwise we get a circular $http dep
+          var TokenAuthService = $injector.get('TokenAuthService');
 
           // append request to buffer to retry later
           TokenAuthService.bufferRequest(response.config);

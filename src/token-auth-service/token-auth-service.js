@@ -118,6 +118,7 @@ angular.module('tokenAuth.authService', [
 
       this.retryRequestBuffer = function () {
         _.each(requestBuffer, function (config) {
+          config.headers.ignoreAuthModule = true;
           $http(config);
         });
         this.clearRequestBuffer();
