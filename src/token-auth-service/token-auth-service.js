@@ -22,19 +22,13 @@ angular.module('tokenAuth.authService', [
           $http.post(
             TokenAuthConfig.getApiEndpointVerify(),
             {token: token},
-            {ignoreTokenAuth: true}
+            {headers: {ignoreTokenAuth: true}}
           )
-          .success((function () {
-            // user is authed, retry all buffer, resolve promise
-            this._authenticated = true;
-            this.requestBufferRetry();
-            verification.resolve();
-          }).bind(this))
-          .error((function (err, status) {
+          .then(this.authSuccess(verification))
+          .catch((function (response) {
             // some error at the verify endpoint
             this._authenticated = false;
-
-            if (status === 401 || status === 403) {
+            if (response.status === 401 || response.status === 403) {
               // not authed, attempt refresh, resolve as refresh does
               this.tokenRefresh()
                 .then(verification.resolve)
@@ -45,9 +39,7 @@ angular.module('tokenAuth.authService', [
             }
           }).bind(this));
         } else {
-          // no token at all, send user to login reject verification
-          this.navToLogin();
-          verification.reject();
+          this.noTokenFailure(verification)();
         }
 
         return verification.promise;
@@ -55,8 +47,37 @@ angular.module('tokenAuth.authService', [
 
       this.tokenRefresh = function () {
         var refresh = $q.defer();
+        var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+
+        if (token) {
+          // has token, fire off request
+          $http.post(
+            TokenAuthConfig.getApiEndpointRefresh(),
+            {token: token},
+            {headers: {ignoreTokenAuth: true}}
+          )
+          .success(this.authSuccess(refresh))
+          .catch(this.noTokenFailure(refresh));
+        } else {
+          this.noTokenFailure(refresh)();
+        }
 
         return refresh.promise;
+      };
+
+      this.authSuccess = function (deferred) {
+        return (function () {
+          this._authenticated = true;
+          this.requestBufferRetry();
+          deferred.resolve();
+        }).bind(this);
+      };
+
+      this.noTokenFailure = function (deferred) {
+        return (function () {
+          this.navToLogin();
+          deferred.reject();
+        }).bind(this);
       };
 
       this.requestBufferPush = function (config) {

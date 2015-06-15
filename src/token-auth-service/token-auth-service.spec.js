@@ -15,6 +15,26 @@ describe('Service: TokenAuthService', function () {
   var loginCallback;
   var logoutCallback;
 
+  var hasIgnoreTokenAuthHeader = function (headers) {
+    return headers.ignoreTokenAuth === true;
+  };
+
+  var requestVerify = function () {
+    return $httpBackend.expectPOST(
+      TokenAuthConfig.getApiEndpointVerify(),
+      {token: testToken},
+      hasIgnoreTokenAuthHeader
+    );
+  };
+
+  var requestRefresh = function () {
+    return $httpBackend.expectPOST(
+      TokenAuthConfig.getApiEndpointRefresh(),
+      {token: testToken},
+      hasIgnoreTokenAuthHeader
+    );
+  };
+
   beforeEach(function () {
     module('tokenAuth', function (TokenAuthConfigProvider) {
       TokenAuthConfigProvider.setLoginPagePath(loginPagePath);
@@ -67,10 +87,7 @@ describe('Service: TokenAuthService', function () {
 
       verification.then(success);
 
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(200);
+      requestVerify().respond(200);
       $httpBackend.flush();
 
       expect(TokenAuthService.isAuthenticated()).to.be.true;
@@ -80,14 +97,24 @@ describe('Service: TokenAuthService', function () {
 
     it('should attempt to refresh token on HTTP 401', function () {
       localStorageService.get = sinon.stub().returns(testToken);
-      sinon.spy(TokenAuthService, 'tokenRefresh');
+      TokenAuthService.tokenRefresh = sinon.stub().returns($q.defer().promise);
 
       TokenAuthService.tokenVerify();
 
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(401);
+      requestVerify().respond(401);
+      $httpBackend.flush();
+
+      expect(TokenAuthService.tokenRefresh.calledOnce).to.be.true;
+      expect(TokenAuthService.isAuthenticated()).to.be.false;
+    });
+
+    it('should attempt to refresh token on HTTP 403', function () {
+      localStorageService.get = sinon.stub().returns(testToken);
+      TokenAuthService.tokenRefresh = sinon.stub().returns($q.defer().promise);
+
+      TokenAuthService.tokenVerify();
+
+      requestVerify().respond(403);
       $httpBackend.flush();
 
       expect(TokenAuthService.tokenRefresh.calledOnce).to.be.true;
@@ -103,14 +130,8 @@ describe('Service: TokenAuthService', function () {
       TokenAuthService.tokenVerify().then(success);
       TokenAuthService.tokenVerify().then(success);
 
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(401);
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(403);
+      requestVerify().respond(401);
+      requestVerify().respond(403);
 
       verifySuccess.resolve();
       $httpBackend.flush();
@@ -121,36 +142,14 @@ describe('Service: TokenAuthService', function () {
       TokenAuthService.tokenVerify().catch(fail);
       TokenAuthService.tokenVerify().catch(fail);
 
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(401);
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(403);
+      requestVerify().respond(401);
+      requestVerify().respond(403);
 
       verifyFailure.reject();
       $httpBackend.flush();
 
       expect(success.calledTwice).to.be.true;
       expect(fail.calledTwice).to.be.true;
-    });
-
-    it('should attempt to refresh token on HTTP 403', function () {
-      localStorageService.get = sinon.stub().returns(testToken);
-      sinon.spy(TokenAuthService, 'tokenRefresh');
-
-      TokenAuthService.tokenVerify();
-
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(403);
-      $httpBackend.flush();
-
-      expect(TokenAuthService.tokenRefresh.calledOnce).to.be.true;
-      expect(TokenAuthService.isAuthenticated()).to.be.false;
     });
 
     it('should reject without refresh on other error codes', function () {
@@ -162,24 +161,70 @@ describe('Service: TokenAuthService', function () {
       TokenAuthService.tokenVerify()
         .catch(fail);
 
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(500);
+      requestVerify().respond(500);
       $httpBackend.flush();
 
       TokenAuthService.tokenVerify()
         .catch(fail);
 
-      $httpBackend.expectPOST(
-        TokenAuthConfig.getApiEndpointVerify(),
-        {token: testToken}
-      ).respond(400);
+      requestVerify().respond(400);
       $httpBackend.flush();
 
       expect(TokenAuthService.tokenRefresh.notCalled).to.be.true;
       expect(TokenAuthService.isAuthenticated()).to.be.false;
       expect(fail.callCount).to.equal(2);
+    });
+  });
+
+  describe('refresh', function () {
+
+    it('should return rejected promise, nav to login when no token is available', function () {
+      localStorageService.get = sinon.stub().returns(null);
+      TokenAuthService.navToLogin = sinon.stub();
+
+      var fail = sinon.stub();
+      var refresh = TokenAuthService.tokenRefresh();
+
+      refresh.catch(fail);
+
+      $rootScope.$digest();
+
+      expect(fail.calledOnce).to.be.true;
+      expect(TokenAuthService.navToLogin.calledOnce).to.be.true;
+    });
+
+    it('should set authentication flag and retry request buffer on success', function () {
+      localStorageService.get = sinon.stub().returns(testToken);
+      TokenAuthService.requestBufferRetry = sinon.stub();
+
+      var success = sinon.stub();
+      var refresh = TokenAuthService.tokenRefresh();
+
+      refresh.then(success);
+
+      requestRefresh().respond(200);
+      $httpBackend.flush();
+
+      expect(TokenAuthService.isAuthenticated()).to.be.true;
+      expect(TokenAuthService.requestBufferRetry.calledOnce).to.be.true;
+      expect(success.calledOnce).to.be.true;
+    });
+
+    it('should return rejected promise, nav to login when refresh fails', function () {
+      localStorageService.get = sinon.stub().returns(testToken);
+      TokenAuthService.navToLogin = sinon.stub();
+
+      var fail = sinon.stub();
+      var refresh = TokenAuthService.tokenRefresh();
+
+      refresh.catch(fail);
+
+      requestRefresh().respond(400);
+      $httpBackend.flush();
+
+      expect(TokenAuthService.navToLogin.calledOnce).to.be.true;
+      expect(TokenAuthService.isAuthenticated()).to.be.false;
+      expect(fail.calledOnce).to.be.true;
     });
   });
 
