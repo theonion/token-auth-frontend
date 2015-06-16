@@ -8,15 +8,8 @@ angular.module('tokenAuth.loginForm', [
     function () {
       return {
         controller: [
-          '$location', '$scope', 'TokenAuthService', 'TokenAuthConfig',
-          function ($location, $scope, TokenAuthService, TokenAuthConfig) {
-
-            // check if user is already authenticated
-            if (TokenAuthService.isAuthenticated()) {
-              // already authenticated, call login callback, navigate away
-              TokenAuthConfig.loginCallback();
-              $location.path(TokenAuthConfig.getAfterLoginPath());
-            }
+          '$scope', 'TokenAuthService', 'TokenAuthConfig',
+          function ($scope, TokenAuthService, TokenAuthConfig) {
 
             $scope.username = '';
             $scope.password = '';

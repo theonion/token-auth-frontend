@@ -18,6 +18,12 @@ angular.module('tokenAuth.authService', [
         return function () {
           TokenAuthService._authenticated = true;
           TokenAuthService.requestBufferRetry();
+
+          // if we're currently on the login page, navigate away from it
+          if ($location.path() === TokenAuthConfig.getLoginPagePath()) {
+            $location.path(TokenAuthConfig.getAfterLoginPath());
+          }
+
           deferred.resolve();
         };
       };
