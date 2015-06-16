@@ -41,7 +41,6 @@ angular.module('tokenAuth.authInterceptor', [
             // not authenticated yet, buffer this request
             TokenAuthService.requestBufferPush(config);
           }
-
         }
 
         return config;
@@ -58,10 +57,10 @@ angular.module('tokenAuth.authInterceptor', [
           var TokenAuthService = $injector.get('TokenAuthService');
 
           // append request to buffer to retry later
-          TokenAuthService.bufferRequest(response.config);
+          TokenAuthService.requestBufferPush(response.config);
 
           // attempt to refresh token
-          TokenAuthService.refreshToken();
+          TokenAuthService.tokenRefresh();
         }
 
         return $q.reject(response);
