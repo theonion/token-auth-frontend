@@ -199,7 +199,13 @@ angular.module('tokenAuth.authInterceptor', [
     function ($injector, $q, $location, localStorageService, TokenAuthConfig) {
 
       var doIgnoreAuth = function (config) {
-        return Boolean(!config || (config.headers && config.headers.ignoreTokenAuth));
+        return Boolean(!config || config.ignoreTokenAuth);
+      };
+
+      var abortRequest = function (config) {
+        var abort = $q.defer();
+        config.timeout = abort.promise;
+        abort.resolve();
       };
 
       this.request = function (config) {
@@ -219,14 +225,15 @@ angular.module('tokenAuth.authInterceptor', [
               config.headers.Authorization = 'JWT ' + token;
             } else {
               // abort requests where there's no token
-              var abort = $q.defer();
-              config.timeout = abort.promise;
-              abort.resolve();
+              abortRequest(config);
 
               // navigate to login page
               TokenAuthService.navToLogin();
             }
           } else {
+            // abort request
+            abortRequest(config);
+
             // not authenticated yet, buffer this request
             TokenAuthService.requestBufferPush(config);
           }
@@ -353,17 +360,20 @@ angular.module('tokenAuth.authService', [
             $http.post(
               TokenAuthConfig.getApiEndpointVerify(),
               {token: token},
-              {headers: {ignoreTokenAuth: true}}
+              {ignoreTokenAuth: true}
             )
             .then(authSuccess(verification))
             .catch(function (response) {
               // some error at the verify endpoint
               TokenAuthService._authenticated = false;
-              if (TokenAuthConfig.isStatusCodeToHandle(response.status)) {
-                // not authed, attempt refresh, resolve as refresh does
+              if (response.status === 400) {
+                // this is an expired token, attempt refresh
                 TokenAuthService.tokenRefresh()
                   .then(verification.resolve)
                   .catch(verification.reject);
+              } else if (TokenAuthConfig.isStatusCodeToHandle(response.status)) {
+                // user is not authorized, send them to login page
+                noTokenFailure(verification)();
               } else {
                 // this is not an auth error, reject verification
                 verification.reject();
@@ -412,7 +422,7 @@ angular.module('tokenAuth.authService', [
             $http.post(
               TokenAuthConfig.getApiEndpointRefresh(),
               {token: token},
-              {headers: {ignoreTokenAuth: true}}
+              {ignoreTokenAuth: true}
             )
             .success(authSuccess(refresh))
             .catch(noTokenFailure(refresh))
@@ -461,7 +471,7 @@ angular.module('tokenAuth.authService', [
               username: username,
               password: password
             },
-            {headers: {ignoreTokenAuth: true}}
+            {ignoreTokenAuth: true}
           )
           .success(function (response) {
             localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
@@ -504,9 +514,12 @@ angular.module('tokenAuth.authService', [
        * Push a request configuration into buffer to be rerun later.
        *
        * @param {object} config - request configuration to be buffered.
+       * @returns {object} cloned config object added to the buffer.
        */
       TokenAuthService.requestBufferPush = function (config) {
-        TokenAuthService._requestBuffer.push(config);
+        var configCopy = _.omit(config, 'timeout');
+        TokenAuthService._requestBuffer.push(configCopy);
+        return configCopy;
       };
 
       /**
