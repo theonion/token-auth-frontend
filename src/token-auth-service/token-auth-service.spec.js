@@ -59,6 +59,7 @@ describe('Service: TokenAuthService', function () {
 
       $rootScope.$digest();
 
+      expect(TokenAuthService.isAuthenticated()).to.be.false;
       expect(fail.calledOnce).to.be.true;
       expect(TokenAuthService.navToLogin.calledOnce).to.be.true;
     });
@@ -174,6 +175,7 @@ describe('Service: TokenAuthService', function () {
 
       $rootScope.$digest();
 
+      expect(TokenAuthService.isAuthenticated()).to.be.false;
       expect(fail.calledOnce).to.be.true;
       expect(TokenAuthService.navToLogin.calledOnce).to.be.true;
     });
@@ -305,6 +307,7 @@ describe('Service: TokenAuthService', function () {
       ).respond({token: testToken});
       $httpBackend.flush();
 
+      expect(TokenAuthService.isAuthenticated()).to.be.true;
       expect(localStorageService.get(TokenAuthConfig.getTokenKey())).to.equal(testToken);
       expect($location.path.withArgs(TokenAuthConfig.getAfterLoginPath()).calledOnce).to.be.true;
       expect(TokenAuthConfig.loginCallback.calledOnce).to.be.true;
@@ -326,6 +329,7 @@ describe('Service: TokenAuthService', function () {
       ).respond(401);
       $httpBackend.flush();
 
+      expect(TokenAuthService.isAuthenticated()).to.be.false;
       expect(fail.calledOnce).to.be.true;
     });
   });
@@ -334,9 +338,11 @@ describe('Service: TokenAuthService', function () {
     localStorageService.remove = sinon.stub();
     $location.path = sinon.stub();
     TokenAuthConfig.logoutCallback = sinon.stub();
+    TokenAuthService._authenticated = true;
 
     TokenAuthService.logout();
 
+    expect(TokenAuthService.isAuthenticated()).to.be.false;
     expect(localStorageService.remove.withArgs(TokenAuthConfig.getTokenKey()).calledOnce).to.be.true;
     expect($location.path.withArgs(TokenAuthConfig.getLoginPagePath()).calledOnce).to.be.true;
     expect(TokenAuthConfig.logoutCallback.calledOnce).to.be.true;

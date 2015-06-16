@@ -23,6 +23,7 @@ angular.module('tokenAuth.authService', [
 
       var noTokenFailure = function (deferred) {
         return function () {
+          TokenAuthService._authenticated = false;
           TokenAuthService.navToLogin();
           deferred.reject();
         };
@@ -94,15 +95,20 @@ angular.module('tokenAuth.authService', [
         .success(function (response) {
           localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
           $location.path(TokenAuthConfig.getAfterLoginPath());
+          TokenAuthService._authenticated = true;
           TokenAuthConfig.loginCallback();
           login.resolve();
         })
-        .catch(login.reject);
+        .catch(function () {
+          TokenAuthService._authenticated = false;
+          login.reject();
+        });
 
         return login.promise;
       };
 
       TokenAuthService.logout = function () {
+        TokenAuthService._authenticated = false;
         localStorageService.remove(TokenAuthConfig.getTokenKey());
         $location.path(TokenAuthConfig.getLoginPagePath());
         TokenAuthConfig.logoutCallback();
