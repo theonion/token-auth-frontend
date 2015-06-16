@@ -10,10 +10,27 @@ angular.module('tokenAuth.authService', [
     function ($q, $rootScope, $location, $http, localStorageService, /*AlertService,*/
       TokenAuthConfig) {
 
-      this._authenticated = false;
-      this._requestBuffer = [];
+      var TokenAuthService = this;
 
-      this.tokenVerify = function () {
+      TokenAuthService._authenticated = false;
+      TokenAuthService._requestBuffer = [];
+
+      var authSuccess = function (deferred) {
+        return function () {
+          TokenAuthService._authenticated = true;
+          TokenAuthService.requestBufferRetry();
+          deferred.resolve();
+        };
+      };
+
+      var noTokenFailure = function (deferred) {
+        return function () {
+          TokenAuthService.navToLogin();
+          deferred.reject();
+        };
+      };
+
+      TokenAuthService.tokenVerify = function () {
         var verification = $q.defer();
         var token = localStorageService.get(TokenAuthConfig.getTokenKey());
 
@@ -24,28 +41,28 @@ angular.module('tokenAuth.authService', [
             {token: token},
             {headers: {ignoreTokenAuth: true}}
           )
-          .then(this.authSuccess(verification))
-          .catch((function (response) {
+          .then(authSuccess(verification))
+          .catch(function (response) {
             // some error at the verify endpoint
-            this._authenticated = false;
+            TokenAuthService._authenticated = false;
             if (response.status === 401 || response.status === 403) {
               // not authed, attempt refresh, resolve as refresh does
-              this.tokenRefresh()
+              TokenAuthService.tokenRefresh()
                 .then(verification.resolve)
                 .catch(verification.reject);
             } else {
               // this is not an auth error, reject verification
               verification.reject();
             }
-          }).bind(this));
+          });
         } else {
-          this.noTokenFailure(verification)();
+          noTokenFailure(verification)();
         }
 
         return verification.promise;
       };
 
-      this.tokenRefresh = function () {
+      TokenAuthService.tokenRefresh = function () {
         var refresh = $q.defer();
         var token = localStorageService.get(TokenAuthConfig.getTokenKey());
 
@@ -56,159 +73,80 @@ angular.module('tokenAuth.authService', [
             {token: token},
             {headers: {ignoreTokenAuth: true}}
           )
-          .success(this.authSuccess(refresh))
-          .catch(this.noTokenFailure(refresh));
+          .success(authSuccess(refresh))
+          .catch(noTokenFailure(refresh));
         } else {
-          this.noTokenFailure(refresh)();
+          noTokenFailure(refresh)();
         }
 
         return refresh.promise;
       };
 
-      this.authSuccess = function (deferred) {
-        return (function () {
-          this._authenticated = true;
-          this.requestBufferRetry();
-          deferred.resolve();
-        }).bind(this);
+      TokenAuthService.login = function (username, password) {
+        var login = $q.defer();
+
+        $http.post(
+          TokenAuthConfig.getApiEndpointAuth(),
+          {
+            username: username,
+            password: password
+          },
+          {headers: {ignoreTokenAuth: true}}
+        )
+        .success(function (response) {
+          localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
+          $location.path(TokenAuthConfig.getAfterLoginPath());
+          TokenAuthConfig.loginCallback();
+          login.resolve();
+        })
+        .catch(login.reject);
+
+        return login.promise;
       };
 
-      this.noTokenFailure = function (deferred) {
-        return (function () {
-          this.navToLogin();
-          deferred.reject();
-        }).bind(this);
+      TokenAuthService.logout = function () {
+        localStorageService.remove(TokenAuthConfig.getTokenKey());
+        $location.path(TokenAuthConfig.getLoginPagePath());
+        TokenAuthConfig.logoutCallback();
       };
 
-      this.requestBufferPush = function (config) {
-        this._requestBuffer.push(config);
+      TokenAuthService.requestBufferPush = function (config) {
+        TokenAuthService._requestBuffer.push(config);
       };
 
-      this.requestBufferRetry = function () {
-        _.each(this._requestBuffer, function (config) {
+      TokenAuthService.requestBufferRetry = function () {
+        var abort = $q.defer();
+
+        _.each(TokenAuthService._requestBuffer, function (config) {
           config.headers = config.headers || {};
           config.headers.ignoreTokenAuth = true;
-          $http(config);
+
+          // hook for canceling requests after a failure
+          config.timeout = abort.promise;
+
+          $http(config)
+            .catch(function () {
+              // have one failure, abort all other requests
+              abort.resolve();
+            });
          });
-         this.clearRequestBuffer();
+
+         TokenAuthService.requestBufferClear();
       };
 
-      this.requestBufferClear = function () {
-        this._requestBuffer = [];
+      TokenAuthService.requestBufferClear = function () {
+        TokenAuthService._requestBuffer = [];
       };
 
-      this.navToLogin = function () {
-        this.requestBufferClear();
+      TokenAuthService.navToLogin = function () {
+        TokenAuthService.requestBufferClear();
         $location.path(TokenAuthConfig.getLoginPagePath());
       };
 
-      this.isAuthenticated = function () {
-        return this._authenticated;
+      TokenAuthService.isAuthenticated = function () {
+        return TokenAuthService._authenticated;
       };
 
-
-
-
-      // this.verifyToken = function () {
-      //   var deferred = $q.defer();
-      //   var token = localStorageService.get(TokenAuthConfig.getTokenKey());
-      //
-      //   deferred.promise
-      //     .then(this.verifySuccess.bind(this));
-      //
-      //   if (token) {
-      //     $http.post(
-      //       TokenAuthConfig.getApiEndpointVerify(),
-      //       {token: token},
-      //       {ignoreAuthModule: true})
-      //     .success(deferred.resolve)
-      //     .error(deferred.reject);
-      //   } else {
-      //     deferred.reject();
-      //   }
-      //
-      //   return deferred.promise;
-      // };
-      //
-      // this.verifySuccess = function () {
-      //   $location.path(TokenAuthConfig.getAfterLoginPath());
-      // };
-      //
-      // this.login = function (username, password) {
-      //   var deferred = $q.defer();
-      //
-      //   deferred.promise
-      //     .then(this.loginSuccess.bind(this))
-      //     .catch(this.loginError.bind(this));
-      //
-      //   $http.post(
-      //     TokenAuthConfig.getApiEndpointAuth(), {
-      //       username: username,
-      //       password: password
-      //     }, {
-      //       ignoreAuthModule: true
-      //     })
-      //   .success(deferred.resolve)
-      //   .error(deferred.reject);
-      //
-      //   return deferred.promise;
-      // };
-      //
-      // this.loginSuccess = function (response) {
-      //   localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
-      //   $location.path(TokenAuthConfig.getAfterLoginPath());
-      //   TokenAuthConfig.loginCallback();
-      // };
-      //
-      // this.loginError = function () {
-      //   // AlertService.error('Username or password provided is incorrect.', false);
-      // };
-      //
-      // this.logout = function () {
-      //   localStorageService.remove(TokenAuthConfig.getTokenKey());
-      //   $location.path(TokenAuthConfig.getLoginPagePath());
-      //   TokenAuthConfig.logoutCallback();
-      // };
-      //
-      // this.refreshToken = function () {
-      //   if (!this.refreshTokenDeferred) {
-      //     this.refreshTokenDeferred = $q.defer();
-      //
-      //     var token = localStorageService.get(TokenAuthConfig.getTokenKey());
-      //
-      //     this.refreshTokenDeferred.promise
-      //       .then(this.tokenRefreshed.bind(this))
-      //       .catch(this.navToLogin.bind(this))
-      //       .finally(function () {
-      //         this.refreshTokenDeferred = null;
-      //       });
-      //
-      //     if (token) {
-      //       $http.post(
-      //         TokenAuthConfig.getApiEndpointRefresh(),
-      //         {token: token},
-      //         {ignoreAuthModule: true})
-      //       .success(this.refreshTokenDeferred.resolve)
-      //       .error(this.refreshTokenDeferred.reject);
-      //     } else {
-      //       this.refreshTokenDeferred.reject();
-      //     }
-      //   }
-      //
-      //   return this.refreshTokenDeferred.promise;
-      // };
-      //
-      // this.tokenRefreshed = function (response) {
-      //   localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
-      //   this.retryRequestBuffer();
-      // };
-      //
-      // this.navToLogin = function () {
-      //   this.clearRequestBuffer();
-      //   $location.path(TokenAuthConfig.getLoginPagePath());
-      // };
-
-
-      return this;
+      return TokenAuthService;
     }
   ]);

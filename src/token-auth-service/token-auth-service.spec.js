@@ -244,7 +244,7 @@ describe('Service: TokenAuthService', function () {
       var config2 = {method: 'GET', url: '2'};
       var config3 = {method: 'GET', url: '3'};
 
-      TokenAuthService.clearRequestBuffer = sinon.stub();
+      TokenAuthService.requestBufferClear = sinon.stub();
 
       TokenAuthService.requestBufferPush(config1);
       TokenAuthService.requestBufferPush(config2);
@@ -260,7 +260,31 @@ describe('Service: TokenAuthService', function () {
       expect(config1.headers.ignoreTokenAuth).to.be.true;
       expect(config2.headers.ignoreTokenAuth).to.be.true;
       expect(config3.headers.ignoreTokenAuth).to.be.true;
-      expect(TokenAuthService.clearRequestBuffer.calledOnce).to.be.true;
+      expect(TokenAuthService.requestBufferClear.calledOnce).to.be.true;
+    });
+
+    it('should cancel other requests when one request fails', function () {
+      var config1 = {method: 'GET', url: '1'};
+      var config2 = {method: 'GET', url: '2'};
+      var config3 = {method: 'GET', url: '3'};
+
+      TokenAuthService.requestBufferPush(config1);
+      TokenAuthService.requestBufferPush(config2);
+      TokenAuthService.requestBufferPush(config3);
+
+      TokenAuthService.requestBufferRetry();
+
+      $httpBackend.expectGET('1').respond(401);
+      $httpBackend.expectGET('2').respond(200);
+      $httpBackend.expectGET('3').respond(200);
+      $httpBackend.flush();
+
+      // according to angular $http docs, a config.timeout that's a resolved promise
+      //  will result in a request failure, which is what we want in this case, note:
+      //  a promise with $$state.status === 1 is a resolved promise
+      expect(config1.timeout.$$state.status).to.equal(1);
+      expect(config2.timeout.$$state.status).to.equal(1);
+      expect(config3.timeout.$$state.status).to.equal(1);
     });
 
     it('should have functionality to clear buffer', function () {
@@ -272,6 +296,65 @@ describe('Service: TokenAuthService', function () {
 
       expect(TokenAuthService._requestBuffer.length).to.equal(0);
     });
+  });
+
+  describe('login', function () {
+    var username = 'abc';
+    var password = '123';
+
+    it('should setup token in local storage, redirect user, call callback on success', function () {
+      var success = sinon.stub();
+
+      $location.path = sinon.stub();
+      TokenAuthConfig.loginCallback = sinon.stub();
+
+      TokenAuthService.login(username, password).then(success);
+
+      $httpBackend.expectPOST(
+        TokenAuthConfig.getApiEndpointAuth(),
+        {
+          username: username,
+          password: password
+        },
+        hasIgnoreTokenAuthHeader
+      ).respond({token: testToken});
+      $httpBackend.flush();
+
+      expect(localStorageService.get(TokenAuthConfig.getTokenKey())).to.equal(testToken);
+      expect($location.path.withArgs(TokenAuthConfig.getAfterLoginPath()).calledOnce).to.be.true;
+      expect(TokenAuthConfig.loginCallback.calledOnce).to.be.true;
+      expect(success.calledOnce).to.be.true;
+    });
+
+    it('should reject on failure', function () {
+      var fail = sinon.stub();
+
+      TokenAuthService.login(username, password).catch(fail);
+
+      $httpBackend.expectPOST(
+        TokenAuthConfig.getApiEndpointAuth(),
+        {
+          username: username,
+          password: password
+        },
+        hasIgnoreTokenAuthHeader
+      ).respond(401);
+      $httpBackend.flush();
+
+      expect(fail.calledOnce).to.be.true;
+    });
+  });
+
+  it('should have a logout function', function () {
+    localStorageService.remove = sinon.stub();
+    $location.path = sinon.stub();
+    TokenAuthConfig.logoutCallback = sinon.stub();
+
+    TokenAuthService.logout();
+
+    expect(localStorageService.remove.withArgs(TokenAuthConfig.getTokenKey()).calledOnce).to.be.true;
+    expect($location.path.withArgs(TokenAuthConfig.getLoginPagePath()).calledOnce).to.be.true;
+    expect(TokenAuthConfig.logoutCallback.calledOnce).to.be.true;
   });
 
   it('should have a getter for authentication status', function () {
@@ -291,262 +374,4 @@ describe('Service: TokenAuthService', function () {
     expect(TokenAuthService.requestBufferClear.calledOnce).to.be.true;
     expect($location.path.withArgs(TokenAuthConfig.getLoginPagePath()).calledOnce).to.be.true;
   });
-
-  // describe('login', function () {
-  //   var expectedPayload = {
-  //     username: 'cnorris',
-  //     password: 'tearskillcancer'
-  //   };
-  //   beforeEach(function () {
-  //     sinon.stub(TokenAuthService, 'loginSuccess');
-  //     sinon.stub(TokenAuthService, 'loginError');
-  //   });
-  //
-  //   describe('always', function () {
-  //     it('returns a promise', function () {
-  //       $httpBackend.when(
-  //           'POST',
-  //           TokenAuthConfig.getApiEndpointAuth())
-  //         .respond({token: '12345'});
-  //       var response = TokenAuthService.login('username', 'password');
-  //       expect(response.then).to.be.a('function');
-  //     });
-  //   });
-  //
-  //   describe('success', function () {
-  //     beforeEach(function () {
-  //       $httpBackend.expectPOST(
-  //           TokenAuthConfig.getApiEndpointAuth(),
-  //           expectedPayload)
-  //         .respond(201, {token: '12345'});
-  //       TokenAuthService.login('cnorris', 'tearskillcancer');
-  //     });
-  //
-  //     it('should call loginSuccess on successful login', function () {
-  //       $httpBackend.flush();
-  //       $rootScope.$digest();
-  //       expect(TokenAuthService.loginSuccess.calledWith({token: '12345'})).to.be.true;
-  //     });
-  //   });
-  //
-  //   describe('error', function () {
-  //     beforeEach(function () {
-  //       $httpBackend.expectPOST(TokenAuthConfig.getApiEndpointAuth(), expectedPayload).respond(403, {});
-  //       TokenAuthService.login('cnorris', 'tearskillcancer');
-  //     });
-  //
-  //     it('should call loginError on unsuccessful login', function () {
-  //       $httpBackend.flush();
-  //       expect(TokenAuthService.loginError.calledWith({})).to.be.true;
-  //     });
-  //   });
-  // });
-  //
-  // describe('verifySuccess', function () {
-  //   it('should redirect user to cms root path', function () {
-  //     sinon.stub($location, 'path');
-  //     TokenAuthService.verifySuccess();
-  //     expect($location.path.calledWith(afterLoginPath)).to.be.true;
-  //   });
-  // });
-  //
-  // describe('loginSuccess', function () {
-  //   beforeEach(function () {
-  //     sinon.stub($location, 'path');
-  //     sinon.stub(localStorageService, 'set');
-  //     TokenAuthService.loginSuccess({token: '12345'});
-  //   });
-  //
-  //   it('should redirect the user to the cms root path', function () {
-  //     expect($location.path.calledWith(afterLoginPath)).to.be.true;
-  //   });
-  //
-  //   it('should store the token using local storage service', function () {
-  //     expect(localStorageService.set.calledWith(TokenAuthConfig.getTokenKey(), '12345')).to.be.true;
-  //   });
-  //
-  //   it('should call loginCallback', function () {
-  //     expect(loginCallback.calledOnce).to.be.true;
-  //   });
-  // });
-  //
-  // describe('loginError', function () {
-  //   beforeEach(function () {
-  //   //   sinon.stub(alertService, 'error');
-  //   //   TokenAuthService.loginError({});
-  //   });
-  //
-  //   it('should register an error with the alert service', function () {
-  //     // expect(alertService.error.called).to.be.true;
-  //   });
-  // });
-  //
-  // describe('refreshToken', function () {
-  //
-  //   it('should not make a request if user has no token in session', function () {
-  //     sinon.stub(localStorageService, 'get').returns(undefined);
-  //
-  //     var failure = sinon.stub();
-  //     TokenAuthService.refreshToken().catch(failure);
-  //     $rootScope.$digest();
-  //
-  //     expect(failure.calledOnce).to.be.true;
-  //   });
-  //
-  //   it('should only do one refresh request at a time', function () {
-  //     localStorageService.get = sinon.stub().returns('sometoken');
-  //
-  //     TokenAuthService.refreshToken();
-  //     TokenAuthService.refreshToken();
-  //
-  //     // only a single request should come out of this
-  //     $httpBackend
-  //       .expectPOST(
-  //         TokenAuthConfig.getApiEndpointRefresh(),
-  //         {token: 'sometoken'}
-  //       )
-  //       .respond(200, {token: 'someothertoken'});
-  //     $httpBackend.flush();
-  //   });
-  //
-  //   describe('with token', function () {
-  //
-  //     beforeEach(function () {
-  //       sinon.stub(localStorageService, 'get').returns('sometoken');
-  //       sinon.stub(TokenAuthService, 'tokenRefreshed');
-  //       sinon.stub(TokenAuthService, 'navToLogin');
-  //     });
-  //
-  //     it('should return a promise', function () {
-  //       expect(TokenAuthService.refreshToken().then).to.be.a('function');
-  //     });
-  //
-  //     describe('success', function () {
-  //       beforeEach(function () {
-  //         $httpBackend.expectPOST(
-  //             TokenAuthConfig.getApiEndpointRefresh(),
-  //             {token: 'sometoken'})
-  //           .respond(200, {token: 'someothertoken'});
-  //         TokenAuthService.refreshToken();
-  //       });
-  //
-  //       it('should call tokenRefreshed', function () {
-  //         $httpBackend.flush();
-  //         expect(TokenAuthService.tokenRefreshed.calledWith({token: 'someothertoken'})).to.be.true;
-  //         expect(TokenAuthService.navToLogin.called).to.be.false;
-  //       });
-  //     });
-  //
-  //     describe('error', function () {
-  //       beforeEach(function () {
-  //         $httpBackend.expectPOST(
-  //             TokenAuthConfig.getApiEndpointRefresh(),
-  //             {token: 'sometoken'})
-  //           .respond(403, {token: 'someothertoken'});
-  //         TokenAuthService.refreshToken();
-  //       });
-  //
-  //       it('should call navToLogin', function () {
-  //         $httpBackend.flush();
-  //         expect(TokenAuthService.navToLogin.called).to.be.true;
-  //         expect(TokenAuthService.tokenRefreshed.called).to.be.false;
-  //       });
-  //     });
-  //   });
-  // });
-  //
-  // describe('logout', function () {
-  //   beforeEach(function () {
-  //     sinon.stub(localStorageService, 'remove');
-  //     sinon.stub($location, 'path');
-  //
-  //     TokenAuthService.logout();
-  //   });
-  //
-  //   it('should remove the token from local storage and redirect to the login page', function () {
-  //     expect(localStorageService.remove.called).to.be.true;
-  //     expect($location.path.calledWith(loginPagePath));
-  //   });
-  //
-  //   it('should call logoutCallback', function () {
-  //     expect(logoutCallback.calledOnce).to.be.true;
-  //   });
-  // });
-  //
-  // describe('verifyToken', function () {
-  //
-  //   it('should call verifySuccess on success', function () {
-  //     sinon.stub(TokenAuthService, 'verifySuccess');
-  //     sinon.stub(localStorageService, 'get').returns('sometoken');
-  //
-  //     var success = sinon.stub();
-  //
-  //     TokenAuthService.verifyToken()
-  //       .then(success);
-  //
-  //     $httpBackend.expectPOST(
-  //         TokenAuthConfig.getApiEndpointVerify(),
-  //         {token: 'sometoken'})
-  //       .respond(200);
-  //     $httpBackend.flush();
-  //
-  //     expect(success.calledOnce).to.be.true;
-  //     expect(TokenAuthService.verifySuccess.calledOnce).to.be.true;
-  //   });
-  //
-  //   it('should return a deferred that is rejected on failure', function () {
-  //     var failure = sinon.stub();
-  //
-  //     localStorageService.get = sinon.stub().returns('sometoken');
-  //
-  //     TokenAuthService.verifyToken()
-  //       .catch(failure);
-  //
-  //     $httpBackend.expectPOST(
-  //         TokenAuthConfig.getApiEndpointVerify(),
-  //         {token: 'sometoken'})
-  //       .respond(400);
-  //     $httpBackend.flush();
-  //
-  //     expect(failure.calledOnce).to.be.true;
-  //   });
-  //
-  // });
-  //
-  // describe('tokenRefreshed', function () {
-  //   beforeEach(function () {
-  //     sinon.stub(localStorageService, 'set');
-  //     sinon.stub(TokenAuthService, 'retryRequestBuffer');
-  //     TokenAuthService.tokenRefreshed({token: 'thetoken'});
-  //   });
-  //
-  //   it('should store the token using local storage service', function () {
-  //     expect(localStorageService.set.calledWith(TokenAuthConfig.getTokenKey(), 'thetoken')).to.be.true;
-  //   });
-  //
-  //   it('should retry all requests', function () {
-  //     expect(TokenAuthService.retryRequestBuffer.called).to.be.true;
-  //   });
-  // });
-  //
-  // describe('navToLogin', function () {
-  //   beforeEach(function () {
-  //     sinon.stub(TokenAuthService, 'clearRequestBuffer');
-  //     // sinon.stub(alertService, 'error');
-  //     sinon.stub($location, 'path');
-  //     TokenAuthService.navToLogin();
-  //   });
-  //
-  //   it('should tell the request buffer to reject all pending requests', function () {
-  //     expect(TokenAuthService.clearRequestBuffer.called).to.be.true;
-  //   });
-  //
-  //   it('should register an error with the alert service', function () {
-  //     // expect(alertService.error.called).to.be.true;
-  //   });
-  //
-  //   it('should redirect the user back to the login page', function () {
-  //     expect($location.path.calledWith(TokenAuthConfig.getLoginPagePath())).to.be.true;
-  //   });
-  // });
 });
