@@ -1,19 +1,14 @@
 'use strict';
 
 describe('Service: TokenAuthService', function () {
-  var $q;
   var $httpBackend;
-  var $rootScope;
   var $location;
-  var $window;
+  var $q;
+  var $rootScope;
   var localStorageService;
-  var TokenAuthService;
-  var TokenAuthConfig;
   var testToken = 'some-test-token';
-  var afterLoginPath = '/some/path';
-  var loginPagePath = '/cms/login';
-  var loginCallback;
-  var logoutCallback;
+  var TokenAuthConfig;
+  var TokenAuthService;
 
   var hasIgnoreTokenAuthHeader = function (headers) {
     return headers.ignoreTokenAuth === true;
@@ -36,28 +31,18 @@ describe('Service: TokenAuthService', function () {
   };
 
   beforeEach(function () {
-    module('tokenAuth', function (TokenAuthConfigProvider) {
-      TokenAuthConfigProvider.setLoginPagePath(loginPagePath);
-      TokenAuthConfigProvider.setAfterLoginPath(afterLoginPath);
+    module('tokenAuth');
 
-      loginCallback = sinon.stub();
-      TokenAuthConfigProvider.setLoginCallback(loginCallback);
+    inject(function (_$httpBackend_, _$location_, _$q_, _$rootScope_,
+        _localStorageService_, _TokenAuthConfig_, _TokenAuthService_) {
 
-      logoutCallback = sinon.stub();
-      TokenAuthConfigProvider.setLogoutCallback(logoutCallback);
-    });
-
-    inject(function (_$q_, _$httpBackend_, _$rootScope_, _$location_, _$window_,
-        _TokenAuthService_, _localStorageService_, _TokenAuthConfig_) {
-
-      $q = _$q_;
       $httpBackend = _$httpBackend_;
       $location = _$location_;
-      TokenAuthService = _TokenAuthService_;
-      localStorageService = _localStorageService_;
+      $q = _$q_;
       $rootScope = _$rootScope_;
-      $window = _$window_;
+      localStorageService = _localStorageService_;
       TokenAuthConfig = _TokenAuthConfig_;
+      TokenAuthService = _TokenAuthService_;
     });
   });
 
