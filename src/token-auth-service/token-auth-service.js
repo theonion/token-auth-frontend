@@ -30,6 +30,13 @@ angular.module('tokenAuth.authService', [
         };
       };
 
+      /**
+       * Token verification endpoint. Should be used as the initial request when
+       *  a page loads to check if user is authenticated. All requests should be
+       *  buffered until verify endpoint returns successfully.
+       *
+       * @returns {promise} resolves when authenticated, rejects otherwise.
+       */
       TokenAuthService.tokenVerify = function () {
         var verification = $q.defer();
 
@@ -82,6 +89,14 @@ angular.module('tokenAuth.authService', [
         return verification.promise;
       };
 
+      /**
+       * Token refresh endpoint. Should be used for reauthenticating ajax requests
+       *  that have responded with an unauthorized status code. In the event of
+       *  an error status code returning from a refresh request, the user will
+       *  be routed to the login page.
+       *
+       * @returns {promise} resolves when authenticated, rejects otherwise.
+       */
       TokenAuthService.tokenRefresh = function () {
         var refresh = $q.defer();
 
@@ -122,6 +137,15 @@ angular.module('tokenAuth.authService', [
         return refresh.promise;
       };
 
+      /**
+       * Login endpoint. Should only be used where a user is providing a username
+       *  and password to login. After a successful login, the user will be directed
+       *  to the configured afterLoginPath location.
+       *
+       * @param {string} username - username to use to login.
+       * @param {string} password - password to use to login.
+       * @returns {promise} resolves when authenticated, rejects otherwise.
+       */
       TokenAuthService.login = function (username, password) {
         var login = $q.defer();
 
@@ -164,6 +188,10 @@ angular.module('tokenAuth.authService', [
         return login.promise;
       };
 
+      /**
+       * Log user out by removing token from local storage, sends them back to
+       *  login page.
+       */
       TokenAuthService.logout = function () {
         TokenAuthService._authenticated = false;
         localStorageService.remove(TokenAuthConfig.getTokenKey());
@@ -171,10 +199,20 @@ angular.module('tokenAuth.authService', [
         TokenAuthConfig.logoutCallback();
       };
 
+      /**
+       * Push a request configuration into buffer to be rerun later.
+       *
+       * @param {object} config - request configuration to be buffered.
+       */
       TokenAuthService.requestBufferPush = function (config) {
         TokenAuthService._requestBuffer.push(config);
       };
 
+      /**
+       * Retry all buffered requests. If any response returns with an
+       *  unauthorized status code, all further buffered requests will be aborted.
+       *  Clears buffer in every case.
+       */
       TokenAuthService.requestBufferRetry = function () {
         var abort = $q.defer();
 
@@ -194,15 +232,24 @@ angular.module('tokenAuth.authService', [
          TokenAuthService.requestBufferClear();
       };
 
+      /**
+       * Remove all request configurations from request buffer.
+       */
       TokenAuthService.requestBufferClear = function () {
         TokenAuthService._requestBuffer = [];
       };
 
+      /**
+       * Clear request buffer and send user to login page.
+       */
       TokenAuthService.navToLogin = function () {
         TokenAuthService.requestBufferClear();
         $location.path(TokenAuthConfig.getLoginPagePath());
       };
 
+      /**
+       * @returns {boolean} true when some authorization endpoint has successfully returned.
+       */
       TokenAuthService.isAuthenticated = function () {
         return TokenAuthService._authenticated;
       };
