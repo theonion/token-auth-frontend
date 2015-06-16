@@ -12,12 +12,11 @@ angular.module('tokenAuth.loginForm', [
           function ($location, $scope, TokenAuthService, TokenAuthConfig) {
 
             // check if user is already authenticated
-            TokenAuthService.tokenVerify()
-              .then(function () {
-                // already authenticated, call login callback, navigate away
-                TokenAuthConfig.loginCallback();
-                $location.path(TokenAuthConfig.getAfterLoginPath());
-              });
+            if (TokenAuthService.isAuthenticated()) {
+              // already authenticated, call login callback, navigate away
+              TokenAuthConfig.loginCallback();
+              $location.path(TokenAuthConfig.getAfterLoginPath());
+            }
 
             $scope.username = '';
             $scope.password = '';
