@@ -12,6 +12,8 @@ angular.module('tokenAuth.config', [])
     var apiEndpointVerify = '/api/token/verify';
     // host where auth endpoints are located
     var apiHost = '';
+    // HTTP codes this module should handle
+    var handleHttpCodes = [401, 403];
     // callback called on successful login
     var loginCallback = function () {};
     // path to login page
@@ -66,6 +68,21 @@ angular.module('tokenAuth.config', [])
       }
     };
 
+    this.setHandleHttpCodes = function (httpCodesList) {
+      if (_.isArray(httpCodesList)) {
+        // check that all the items are numbers
+        _.each(httpCodesList, function (httpCode) {
+          if (!_.isNumber(httpCode)) {
+            throw new TypeError('TokenAuthConfig.handleHttpCodes must include only Numbers! ' + httpCode + ' is not a Number.');
+          }
+        });
+
+        handleHttpCodes = httpCodesList;
+      } else {
+        throw new TypeError('TokenAuthConfig.handleHttpCodes must be an array!');
+      }
+    };
+
     this.setLoginCallback = function (func) {
       if (_.isFunction(func)) {
         loginCallback = func;
@@ -103,7 +120,7 @@ angular.module('tokenAuth.config', [])
         // check that all the items are regex
         _.each(matcherList, function (matcher) {
           if (!_.isRegExp(matcher)) {
-            throw new TypeError('TokenAuthConfig.matchers must include only RegExp objects! "' + matcher + '" is not a RegExp.');
+            throw new TypeError('TokenAuthConfig.matchers must include only RegExp objects! ' + matcher + ' is not a RegExp.');
           }
         });
 
@@ -132,6 +149,16 @@ angular.module('tokenAuth.config', [])
         getTokenKey: _.constant(tokenKey),
         loginCallback: loginCallback,
         logoutCallback: logoutCallback,
+        /**
+         * Check if this an HTTP status code this library should handle.
+         *
+         * @param {number} httpCode - HTTP code to test.
+         * @returns {boolean} true if HTTP code indicates something to handle,
+         *    false otherwise.
+         */
+        isStatusCodeToHandle: function (httpCode) {
+          return _.includes(handleHttpCodes, httpCode);
+        },
         /**
          * Check if a url is a token auth url.
          *

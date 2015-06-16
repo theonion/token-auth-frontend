@@ -10,35 +10,36 @@ angular.module('tokenAuth.authInterceptor', [
     function ($injector, $q, $location, localStorageService, TokenAuthConfig) {
 
       var doIgnoreAuth = function (config) {
-        return Boolean(
-          !config ||
-          config.ignoreAuthModule ||
-          (config.headers && config.headers.ignoreAuthModule));
+        return Boolean(!config || (config.headers && config.headers.ignoreTokenAuth));
       };
 
       this.request = function (config) {
-        // only deal with requests if auth module is not ignored, and this is a url
-        //  to deal with
         if (!doIgnoreAuth(config) && TokenAuthConfig.shouldBeIntercepted(config.url)) {
 
-          var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+          // need to inject service here, otherwise we get a circular $http dep
+          var TokenAuthService = $injector.get('TokenAuthService');
 
-          // check if we have a token, if not, prevent request from firing, send user to login
-          if (token) {
-            // add Authorization header
-            config.headers = config.headers || {};
-            config.headers.Authorization = 'JWT ' + token;
+          if (TokenAuthService.isAuthenticated()) {
+            // we've already been authenticated
+            var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+
+            // check if we have a token, if not, prevent request from firing, send user to login
+            if (token) {
+              // add Authorization header
+              config.headers = config.headers || {};
+              config.headers.Authorization = 'JWT ' + token;
+            } else {
+              // abort requests where there's no token
+              var abort = $q.defer();
+              config.timeout = abort.promise;
+              abort.resolve();
+
+              // navigate to login page
+              TokenAuthService.navToLogin();
+            }
           } else {
-            // abort requests where there's no token
-            var abort = $q.defer();
-            config.timeout = abort.promise;
-            abort.resolve();
-
-            // need to inject service here, otherwise we get a circular $http dep
-            var TokenAuthService = $injector.get('TokenAuthService');
-
-            // navigate to login page
-            TokenAuthService.navToLogin();
+            // not authenticated yet, buffer this request
+            TokenAuthService.requestBufferPush(config);
           }
         }
 
@@ -50,16 +51,16 @@ angular.module('tokenAuth.authInterceptor', [
         //  to deal with and the response code is unauthorized
         if (!doIgnoreAuth(response.config) &&
             TokenAuthConfig.shouldBeIntercepted(response.config.url) &&
-            (response.status === 403 || response.status === 401)) {
+            TokenAuthConfig.isStatusCodeToHandle(response.status)) {
 
           // need to inject service here, otherwise we get a circular $http dep
           var TokenAuthService = $injector.get('TokenAuthService');
 
           // append request to buffer to retry later
-          TokenAuthService.bufferRequest(response.config);
+          TokenAuthService.requestBufferPush(response.config);
 
           // attempt to refresh token
-          TokenAuthService.refreshToken();
+          TokenAuthService.tokenRefresh();
         }
 
         return $q.reject(response);

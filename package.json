@@ -1,6 +1,6 @@
 {
   "name": "token-auth-frontend",
-  "version": "0.0.35",
+  "version": "0.0.36",
   "description": "Frontend for token auth and login page",
   "main": [
     "dist/login-form.css",
