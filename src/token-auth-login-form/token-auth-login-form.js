@@ -8,28 +8,29 @@ angular.module('tokenAuth.loginForm', [
     function () {
       return {
         controller: [
-          '$location', '$scope', 'TokenAuthService', 'TokenAuthConfig', /*'AlertService',*/
-          function ($location, $scope, TokenAuthService, TokenAuthConfig /*, AlertService*/) {
+          '$location', '$scope', 'TokenAuthService', 'TokenAuthConfig',
+          function ($location, $scope, TokenAuthService, TokenAuthConfig) {
 
-            $scope.init = function () {
-              // check if user is already authenticated
-              TokenAuthService.verifyToken();
+            // check if user is already authenticated
+            TokenAuthService.tokenVerify()
+              .then(function () {
+                // already authenticated, call login callback, navigate away
+                TokenAuthConfig.loginCallback();
+                $location.path(TokenAuthConfig.getAfterLoginPath());
+              });
 
-              $scope.username = '';
-              $scope.password = '';
-              $scope.submitted = '';
-              $scope.LOGO_URL = TokenAuthConfig.getLogoUrl();
-            };
+            $scope.username = '';
+            $scope.password = '';
+            $scope.submitted = '';
+            $scope.LOGO_URL = TokenAuthConfig.getLogoUrl();
 
             $scope.submitLogin = function () {
               $scope.submitted = 'submitted';
-              // AlertService.clear();
+
               if(!_.isEmpty($scope.username) && !_.isEmpty($scope.password)) {
                 TokenAuthService.login($scope.username, $scope.password);
               }
             };
-
-            $scope.init();
           }
         ],
         restrict: 'E',

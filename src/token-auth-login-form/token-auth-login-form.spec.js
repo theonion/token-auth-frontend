@@ -1,118 +1,83 @@
 'use strict';
-//
-// describe('Directive: TokenAuthLoginForm', function () {
-//   var $scope;
-//   var promiseStub;
-//   var $httpBackend;
-//   var $location;
-//   var TokenAuthService;
-//   // var AlertService;
-//
-//   promiseStub = sinon.stub();
-//   promiseStub.abort = function () {};
-//   promiseStub.fail = function () {};
-//   promiseStub.done = function () {};
-//   promiseStub.always = function () {};
-//   promiseStub.success = function () {};
-//   promiseStub.error = function () {};
-//   promiseStub.then = function () {};
-//
-//   beforeEach(function () {
-//     module('tokenAuth', function (TokenAuthConfigProvider) {
-//
-//       TokenAuthConfigProvider.setLogoUrl('http://some.logo.url/logo.png');
-//       TokenAuthConfigProvider.setApiHost('http://some.api.host');
-//       TokenAuthConfigProvider.setApiEndpointAuth('/api/token/auth');
-//       TokenAuthConfigProvider.setApiEndpointRefresh('/api/token/refresh');
-//     });
-//
-//     inject(function (_TokenAuthService_, /*_AlertService_,*/ _$httpBackend_,
-//         _$location_, $compile, $rootScope) {
-//       TokenAuthService = _TokenAuthService_;
-//       // AlertService = _AlertService_;
-//       $httpBackend = _$httpBackend_;
-//       $location = _$location_;
-//
-//       TokenAuthService.verifyToken = sinon.stub();
-//
-//       var $directiveScope = $rootScope.$new();
-//       var element = $compile('<token-auth-login-form></token-auth-login-form>')($directiveScope);
-//       $directiveScope.$digest();
-//       $scope = element.isolateScope();
-//     });
-//   });
-//
-//   it('should have a scope initialization function', function () {
-//     TokenAuthService.verifyToken = sinon.stub();
-//
-//     $scope.username = 'cnorris';
-//     $scope.password = 'tearscurecancer';
-//     $scope.submitted = 'submitted';
-//     $scope.LOGO_URL = 'http://www.example.com/1.jpg';
-//
-//     $scope.init();
-//
-//     expect($scope.username).to.eql('');
-//     expect($scope.password).to.eql('');
-//     expect($scope.submitted).to.eql('');
-//     expect($scope.LOGO_URL).to.eql('http://some.logo.url/logo.png');
-//     expect(TokenAuthService.verifyToken.calledOnce).to.be.true;
-//   });
-//
-//   describe('#submitLogin', function () {
-//     beforeEach(function () {
-//       $scope.submitted = '';
-//       // sinon.stub(AlertService, 'clear');
-//     });
-//
-//     it('sets the submitted value to "submitted"', function () {
-//       $scope.submitLogin();
-//       expect($scope.submitted).to.eql('submitted');
-//     });
-//
-//     describe('without username', function () {
-//       beforeEach(function () {
-//         sinon.stub(TokenAuthService, 'login', promiseStub);
-//         $scope.username = '';
-//         $scope.password = 'somepassword';
-//         $scope.submitLogin();
-//       });
-//
-//       it('does not try to login', function () {
-//         expect(TokenAuthService.login.called).to.be.false;
-//       });
-//     });
-//
-//     describe('without password', function () {
-//       beforeEach(function () {
-//         sinon.stub(TokenAuthService, 'login', promiseStub);
-//         $scope.username = 'somename';
-//         $scope.password = '';
-//         $scope.submitLogin();
-//       });
-//
-//       it('does not try to login', function () {
-//         expect(TokenAuthService.login.called).to.be.false;
-//       });
-//     });
-//
-//     describe('with credentials', function () {
-//       beforeEach(function () {
-//         $scope.username = 'somename';
-//         $scope.password = 'somepassword';
-//         sinon.spy(TokenAuthService, 'login');
-//         $httpBackend.expectPOST('/api/token/auth').respond(200, {token: 'greatsuccess'});
-//       });
-//
-//       it('clears any previous alerts from the alert service', function () {
-//         $scope.submitLogin();
-//         // expect(AlertService.clear.called).to.be.true;
-//       });
-//
-//       it('logs in through the auth service with the username and password', function () {
-//         $scope.submitLogin();
-//         expect(TokenAuthService.login.calledWith('somename', 'somepassword')).to.be.true;
-//       });
-//     });
-//   });
-// });
+
+describe('Directive: TokenAuthLoginForm', function () {
+  var $httpBackend;
+  var $location;
+  var $scope;
+  var verifyDeferred;
+  var TokenAuthConfig;
+  var TokenAuthService;
+
+  beforeEach(function () {
+    module('tokenAuth');
+
+    inject(function (_$httpBackend_, _$location_, _TokenAuthConfig_, _TokenAuthService_,
+        $compile, $q, $rootScope) {
+
+      $httpBackend = _$httpBackend_;
+      $location = _$location_;
+      TokenAuthConfig = _TokenAuthConfig_;
+      TokenAuthService = _TokenAuthService_;
+
+      verifyDeferred = $q.defer();
+      TokenAuthService.tokenVerify = sinon.stub().returns(verifyDeferred.promise);
+
+      var $directiveScope = $rootScope.$new();
+      var element = $compile('<token-auth-login-form></token-auth-login-form>')($directiveScope);
+      $directiveScope.$digest();
+      $scope = element.isolateScope();
+    });
+  });
+
+  it('should attempt to verify authentication status', function () {
+    expect(TokenAuthService.tokenVerify.calledOnce).to.be.true;
+  });
+
+  it('should call login callback and reroute to root page when authenticated', function () {
+    TokenAuthConfig.loginCallback = sinon.stub();
+    $location.path = sinon.stub();
+
+    verifyDeferred.resolve();
+
+    $scope.$digest();
+
+    expect(TokenAuthConfig.loginCallback.calledOnce).to.be.true;
+    expect($location.path.withArgs(TokenAuthConfig.getAfterLoginPath()).calledOnce).to.be.true;
+  });
+
+  it('should set some scope variables', function () {
+    expect($scope.username).to.equal('');
+    expect($scope.password).to.equal('');
+    expect($scope.submitted).to.equal('');
+    expect($scope.LOGO_URL).to.equal(TokenAuthConfig.getLogoUrl());
+  });
+
+  it('should have a function to login', function () {
+    $scope.username = 'abc';
+    $scope.password = '123';
+
+    TokenAuthService.login = sinon.stub();
+
+    $scope.submitLogin();
+
+    expect(TokenAuthService.login.withArgs($scope.username, $scope.password).calledOnce).to.be.true;
+  });
+
+  it('should not login when username or password is blank', function () {
+    TokenAuthService.login = sinon.stub();
+
+    $scope.username = 'abc';
+    $scope.password = '';
+    $scope.submitLogin();
+
+    $scope.username = '';
+    $scope.password = '123';
+    $scope.submitLogin();
+
+    $scope.username = '';
+    $scope.password = '';
+    $scope.submitLogin();
+
+    expect(TokenAuthService.login.notCalled).to.be.true;
+  });
+});
