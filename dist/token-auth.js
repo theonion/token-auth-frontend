@@ -275,16 +275,8 @@ angular.module('tokenAuth.loginForm', [
     function () {
       return {
         controller: [
-          '$location', '$scope', 'TokenAuthService', 'TokenAuthConfig',
-          function ($location, $scope, TokenAuthService, TokenAuthConfig) {
-
-            // check if user is already authenticated
-            TokenAuthService.tokenVerify()
-              .then(function () {
-                // already authenticated, call login callback, navigate away
-                TokenAuthConfig.loginCallback();
-                $location.path(TokenAuthConfig.getAfterLoginPath());
-              });
+          '$scope', 'TokenAuthService', 'TokenAuthConfig',
+          function ($scope, TokenAuthService, TokenAuthConfig) {
 
             $scope.username = '';
             $scope.password = '';
@@ -326,6 +318,12 @@ angular.module('tokenAuth.authService', [
         return function () {
           TokenAuthService._authenticated = true;
           TokenAuthService.requestBufferRetry();
+
+          // if we're currently on the login page, navigate away from it
+          if ($location.path() === TokenAuthConfig.getLoginPagePath()) {
+            $location.path(TokenAuthConfig.getAfterLoginPath());
+          }
+
           deferred.resolve();
         };
       };
