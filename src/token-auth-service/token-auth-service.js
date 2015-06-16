@@ -58,11 +58,14 @@ angular.module('tokenAuth.authService', [
             .catch(function (response) {
               // some error at the verify endpoint
               TokenAuthService._authenticated = false;
-              if (TokenAuthConfig.isStatusCodeToHandle(response.status)) {
-                // not authed, attempt refresh, resolve as refresh does
+              if (response.status === 400) {
+                // this is an expired token, attempt refresh
                 TokenAuthService.tokenRefresh()
                   .then(verification.resolve)
                   .catch(verification.reject);
+              } else if (TokenAuthConfig.isStatusCodeToHandle(response.status)) {
+                // user is not authorized, send them to login page
+                noTokenFailure(verification)();
               } else {
                 // this is not an auth error, reject verification
                 verification.reject();
