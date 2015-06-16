@@ -1,7 +1,7 @@
 'use strict';
-//
-// describe('Interceptor: TokenAuthInterceptor', function () {
-//
+
+describe('Interceptor: TokenAuthInterceptor', function () {
+
 //   var $location;
 //   var $q;
 //   var localStorageService;
@@ -11,8 +11,8 @@
 //   var testRequestConfig;
 //   var url = '/some/test/url';
 //
-//   beforeEach(function () {
-//     module('tokenAuth.authInterceptor');
+  beforeEach(function () {
+    module('tokenAuth.authInterceptor');
 //
 //     inject(function (_$location_, _$q_, _localStorageService_, _TokenAuthConfig_,
 //         _TokenAuthInterceptor_, _TokenAuthService_) {
@@ -26,7 +26,7 @@
 //         url: url
 //       };
 //     });
-//   });
+  });
 //
 //   describe('request handler', function () {
 //
@@ -178,4 +178,4 @@
 //       expect(TokenAuthService.refreshToken.callCount).to.equal(2);
 //     });
 //   });
-// });
+});

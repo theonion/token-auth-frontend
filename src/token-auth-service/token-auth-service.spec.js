@@ -112,26 +112,28 @@ describe('Service: TokenAuthService', function () {
 
       var verifySuccess = $q.defer();
       var success = sinon.stub();
-      TokenAuthService.tokenRefresh = sinon.stub().returns(verifySuccess.promise);
-      TokenAuthService.tokenVerify().then(success);
-      TokenAuthService.tokenVerify().then(success);
-
-      requestVerify().respond(401);
-      requestVerify().respond(403);
-
       verifySuccess.resolve();
+      TokenAuthService.tokenRefresh = sinon.stub().returns(verifySuccess.promise);
+
+      TokenAuthService.tokenVerify().then(success);
+      requestVerify().respond(401);
+      $httpBackend.flush();
+
+      TokenAuthService.tokenVerify().then(success);
+      requestVerify().respond(403);
       $httpBackend.flush();
 
       var verifyFailure = $q.defer();
       var fail = sinon.stub();
-      TokenAuthService.tokenRefresh = sinon.stub().returns(verifyFailure.promise);
-      TokenAuthService.tokenVerify().catch(fail);
-      TokenAuthService.tokenVerify().catch(fail);
-
-      requestVerify().respond(401);
-      requestVerify().respond(403);
-
       verifyFailure.reject();
+      TokenAuthService.tokenRefresh = sinon.stub().returns(verifyFailure.promise);
+
+      TokenAuthService.tokenVerify().catch(fail);
+      requestVerify().respond(401);
+      $httpBackend.flush();
+
+      TokenAuthService.tokenVerify().catch(fail);
+      requestVerify().respond(403);
       $httpBackend.flush();
 
       expect(success.calledTwice).to.be.true;
@@ -244,13 +246,13 @@ describe('Service: TokenAuthService', function () {
       $httpBackend.expectGET('3').respond(200);
       $httpBackend.flush();
 
-      expect(config1.headers.ignoreTokenAuth).to.be.true;
-      expect(config2.headers.ignoreTokenAuth).to.be.true;
-      expect(config3.headers.ignoreTokenAuth).to.be.true;
+      expect(config1.timeout).to.be.defined;
+      expect(config2.timeout).to.be.defined;
+      expect(config3.timeout).to.be.defined;
       expect(TokenAuthService.requestBufferClear.calledOnce).to.be.true;
     });
 
-    it('should cancel other requests when one request fails', function () {
+    it('should cancel other requests when one request fails on HTTP 401 or 403', function () {
       var config1 = {method: 'GET', url: '1'};
       var config2 = {method: 'GET', url: '2'};
       var config3 = {method: 'GET', url: '3'};
@@ -272,6 +274,27 @@ describe('Service: TokenAuthService', function () {
       expect(config1.timeout.$$state.status).to.equal(1);
       expect(config2.timeout.$$state.status).to.equal(1);
       expect(config3.timeout.$$state.status).to.equal(1);
+    });
+
+    it('should not cancel requests for error codes not HTTP 401 or 403', function () {
+      var config1 = {method: 'GET', url: '1'};
+      var config2 = {method: 'GET', url: '2'};
+      var config3 = {method: 'GET', url: '3'};
+
+      TokenAuthService.requestBufferPush(config1);
+      TokenAuthService.requestBufferPush(config2);
+      TokenAuthService.requestBufferPush(config3);
+
+      TokenAuthService.requestBufferRetry();
+
+      $httpBackend.expectGET('1').respond(500);
+      $httpBackend.expectGET('2').respond(400);
+      $httpBackend.expectGET('3').respond(404);
+      $httpBackend.flush();
+
+      expect(config1.timeout.$$state.status).to.equal(0);
+      expect(config2.timeout.$$state.status).to.equal(0);
+      expect(config3.timeout.$$state.status).to.equal(0);
     });
 
     it('should have functionality to clear buffer', function () {
@@ -364,5 +387,17 @@ describe('Service: TokenAuthService', function () {
 
     expect(TokenAuthService.requestBufferClear.calledOnce).to.be.true;
     expect($location.path.withArgs(TokenAuthConfig.getLoginPagePath()).calledOnce).to.be.true;
+  });
+
+  it('should not allow multiple token auth requests to occur', function () {
+    localStorageService.get = sinon.stub().returns(testToken);
+
+    TokenAuthService.tokenVerify();
+    TokenAuthService.tokenRefresh();
+    TokenAuthService.login('abc', '123');
+
+    // we should only get a request to the verify endpoint
+    requestVerify().respond(403);
+    $httpBackend.flush();
   });
 });
