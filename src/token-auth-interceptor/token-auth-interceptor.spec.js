@@ -88,25 +88,26 @@ describe('Interceptor: TokenAuthInterceptor', function () {
       testRequestConfig.ignoreAuthModule = true;
       TokenAuthInterceptor.request(testRequestConfig);
 
-      // ignore provided in headers
-      delete testRequestConfig.ignoreAuthModule;
-      testRequestConfig.headers = {ignoreAuthModule: true};
-      TokenAuthInterceptor.request(testRequestConfig);
-
-      expect(localStorageService.get.calledOnce).to.be.false;
+      expect(localStorageService.get.calledOnce).to.be.true;
     });
 
     it('should buffer requests until auth service is authenticated', function () {
+      var config1 = {url: '1'};
+      var config2 = {url: '2'};
+      var config3 = {url: '3'};
+
       TokenAuthService.requestBufferPush = sinon.stub();
 
       TokenAuthService.isAuthenticated = sinon.stub().returns(false);
-      TokenAuthInterceptor.request(testRequestConfig);
-      TokenAuthInterceptor.request(testRequestConfig);
+      TokenAuthInterceptor.request(config1);
+      TokenAuthInterceptor.request(config2);
 
       TokenAuthService.isAuthenticated = sinon.stub().returns(true);
-      TokenAuthInterceptor.request(testRequestConfig);
+      TokenAuthInterceptor.request(config3);
 
-      expect(TokenAuthService.requestBufferPush.withArgs(testRequestConfig).callCount).to.equal(2);
+      expect(TokenAuthService.requestBufferPush.withArgs(config1).calledOnce).to.be.true;
+      expect(TokenAuthService.requestBufferPush.withArgs(config2).calledOnce).to.be.true;
+      expect(TokenAuthService.requestBufferPush.withArgs(config3).notCalled).to.be.true;
     });
   });
 
@@ -157,13 +158,8 @@ describe('Interceptor: TokenAuthInterceptor', function () {
       response.config = {ignoreAuthModule: true};
       TokenAuthInterceptor.responseError(response);
 
-      // ignore provided in headers
-      delete response.config.ignoreAuthModule;
-      response.config.headers = {ignoreAuthModule: true};
-      TokenAuthInterceptor.responseError(response);
-
-      expect(TokenAuthService.requestBufferPush.calledOnce).to.be.false;
-      expect(TokenAuthService.tokenRefresh.calledOnce).to.be.false;
+      expect(TokenAuthService.requestBufferPush.calledOnce).to.be.true;
+      expect(TokenAuthService.tokenRefresh.calledOnce).to.be.true ;
     });
 
     it('should only handle 403 or 401 responses', function () {

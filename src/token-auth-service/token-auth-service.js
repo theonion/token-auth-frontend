@@ -52,7 +52,7 @@ angular.module('tokenAuth.authService', [
             $http.post(
               TokenAuthConfig.getApiEndpointVerify(),
               {token: token},
-              {headers: {ignoreTokenAuth: true}}
+              {ignoreTokenAuth: true}
             )
             .then(authSuccess(verification))
             .catch(function (response) {
@@ -111,7 +111,7 @@ angular.module('tokenAuth.authService', [
             $http.post(
               TokenAuthConfig.getApiEndpointRefresh(),
               {token: token},
-              {headers: {ignoreTokenAuth: true}}
+              {ignoreTokenAuth: true}
             )
             .success(authSuccess(refresh))
             .catch(noTokenFailure(refresh))
@@ -160,7 +160,7 @@ angular.module('tokenAuth.authService', [
               username: username,
               password: password
             },
-            {headers: {ignoreTokenAuth: true}}
+            {ignoreTokenAuth: true}
           )
           .success(function (response) {
             localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
@@ -203,9 +203,12 @@ angular.module('tokenAuth.authService', [
        * Push a request configuration into buffer to be rerun later.
        *
        * @param {object} config - request configuration to be buffered.
+       * @returns {object} cloned config object added to the buffer.
        */
       TokenAuthService.requestBufferPush = function (config) {
-        TokenAuthService._requestBuffer.push(config);
+        var configCopy = _.omit(config, 'timeout');
+        TokenAuthService._requestBuffer.push(configCopy);
+        return configCopy;
       };
 
       /**

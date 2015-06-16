@@ -10,23 +10,17 @@ describe('Service: TokenAuthService', function () {
   var TokenAuthConfig;
   var TokenAuthService;
 
-  var hasIgnoreTokenAuthHeader = function (headers) {
-    return headers.ignoreTokenAuth === true;
-  };
-
   var requestVerify = function () {
     return $httpBackend.expectPOST(
       TokenAuthConfig.getApiEndpointVerify(),
-      {token: testToken},
-      hasIgnoreTokenAuthHeader
+      {token: testToken}
     );
   };
 
   var requestRefresh = function () {
     return $httpBackend.expectPOST(
       TokenAuthConfig.getApiEndpointRefresh(),
-      {token: testToken},
-      hasIgnoreTokenAuthHeader
+      {token: testToken}
     );
   };
 
@@ -219,13 +213,23 @@ describe('Service: TokenAuthService', function () {
 
   describe('request buffer', function () {
 
-    it('should have funtionality to add to buffer', function () {
-      var config = {a: 123};
+    it('should have functionality to add to buffer', function () {
+      var config = {url: '1'};
 
       TokenAuthService.requestBufferPush(config);
 
       expect(TokenAuthService._requestBuffer.length).to.equal(1);
-      expect(TokenAuthService._requestBuffer[0]).to.equal(config);
+      expect(TokenAuthService._requestBuffer[0]).not.to.equal(config);
+      expect(TokenAuthService._requestBuffer[0].url).to.equal(config.url);
+    });
+
+    it('should remove timeouts from added configs', function () {
+      var config = {url: '1', timeout: {a: '123'}};
+
+      TokenAuthService.requestBufferPush(config);
+
+      expect(TokenAuthService._requestBuffer[0].url).to.equal(config.url);
+      expect(TokenAuthService._requestBuffer[0].timeout).to.be.undefined;
     });
 
     it('should have functionality to retry buffer', function () {
@@ -257,9 +261,9 @@ describe('Service: TokenAuthService', function () {
       var config2 = {method: 'GET', url: '2'};
       var config3 = {method: 'GET', url: '3'};
 
-      TokenAuthService.requestBufferPush(config1);
-      TokenAuthService.requestBufferPush(config2);
-      TokenAuthService.requestBufferPush(config3);
+      var buffered1 = TokenAuthService.requestBufferPush(config1);
+      var buffered2 = TokenAuthService.requestBufferPush(config2);
+      var buffered3 = TokenAuthService.requestBufferPush(config3);
 
       TokenAuthService.requestBufferRetry();
 
@@ -271,9 +275,9 @@ describe('Service: TokenAuthService', function () {
       // according to angular $http docs, a config.timeout that's a resolved promise
       //  will result in a request failure, which is what we want in this case, note:
       //  a promise with $$state.status === 1 is a resolved promise
-      expect(config1.timeout.$$state.status).to.equal(1);
-      expect(config2.timeout.$$state.status).to.equal(1);
-      expect(config3.timeout.$$state.status).to.equal(1);
+      expect(buffered1.timeout.$$state.status).to.equal(1);
+      expect(buffered2.timeout.$$state.status).to.equal(1);
+      expect(buffered3.timeout.$$state.status).to.equal(1);
     });
 
     it('should not cancel requests for error codes not HTTP 401 or 403', function () {
@@ -281,9 +285,9 @@ describe('Service: TokenAuthService', function () {
       var config2 = {method: 'GET', url: '2'};
       var config3 = {method: 'GET', url: '3'};
 
-      TokenAuthService.requestBufferPush(config1);
-      TokenAuthService.requestBufferPush(config2);
-      TokenAuthService.requestBufferPush(config3);
+      var buffered1 = TokenAuthService.requestBufferPush(config1);
+      var buffered2 = TokenAuthService.requestBufferPush(config2);
+      var buffered3 = TokenAuthService.requestBufferPush(config3);
 
       TokenAuthService.requestBufferRetry();
 
@@ -292,9 +296,9 @@ describe('Service: TokenAuthService', function () {
       $httpBackend.expectGET('3').respond(404);
       $httpBackend.flush();
 
-      expect(config1.timeout.$$state.status).to.equal(0);
-      expect(config2.timeout.$$state.status).to.equal(0);
-      expect(config3.timeout.$$state.status).to.equal(0);
+      expect(buffered1.timeout.$$state.status).to.equal(0);
+      expect(buffered2.timeout.$$state.status).to.equal(0);
+      expect(buffered3.timeout.$$state.status).to.equal(0);
     });
 
     it('should have functionality to clear buffer', function () {
@@ -325,8 +329,7 @@ describe('Service: TokenAuthService', function () {
         {
           username: username,
           password: password
-        },
-        hasIgnoreTokenAuthHeader
+        }
       ).respond({token: testToken});
       $httpBackend.flush();
 
@@ -347,8 +350,7 @@ describe('Service: TokenAuthService', function () {
         {
           username: username,
           password: password
-        },
-        hasIgnoreTokenAuthHeader
+        }
       ).respond(401);
       $httpBackend.flush();
 

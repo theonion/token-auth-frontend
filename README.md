@@ -23,7 +23,8 @@ Angular library for token auth with [django-rest-framework-jwt](https://github.c
   angular.module('myApp', ['tokenAuth'])
   ```
 
-4. Then somewhere within a ```config``` step of some module, setup a reference to the logout function provided by the ```tokenAuth.authService``` module. Also setup the ```TokenAuthInterceptor``` so the library can intercept and authenticate requests. For example:
+4. Then somewhere within a ```config``` step of some module, setup a reference to the logout function provided by the ```tokenAuth.authService``` module. Also setup the ```TokenAuthInterceptor``` so the library can intercept and authenticate requests. Initial
+verify endpoint call also needs to be made when your module runs for the first time. For example:
   ```javascript
   angular.module('myApp.settings', ['tokenAuth'])
     .config([
@@ -36,6 +37,13 @@ Angular library for token auth with [django-rest-framework-jwt](https://github.c
 
         // setup interceptor to authenticate requests
         $httpProvider.interceptors.push('TokenAuthInterceptor');
+      }
+    ])
+    .run([
+      'TokenAuthService',
+      function (TokenAuthService) {
+        // need to call this immediately when this module runs
+        TokenAuthService.tokenVerify();
       }
     ]);
   ```

@@ -10,7 +10,13 @@ angular.module('tokenAuth.authInterceptor', [
     function ($injector, $q, $location, localStorageService, TokenAuthConfig) {
 
       var doIgnoreAuth = function (config) {
-        return Boolean(!config || (config.headers && config.headers.ignoreTokenAuth));
+        return Boolean(!config || config.ignoreTokenAuth);
+      };
+
+      var abortRequest = function (config) {
+        var abort = $q.defer();
+        config.timeout = abort.promise;
+        abort.resolve();
       };
 
       this.request = function (config) {
@@ -30,14 +36,15 @@ angular.module('tokenAuth.authInterceptor', [
               config.headers.Authorization = 'JWT ' + token;
             } else {
               // abort requests where there's no token
-              var abort = $q.defer();
-              config.timeout = abort.promise;
-              abort.resolve();
+              abortRequest(config);
 
               // navigate to login page
               TokenAuthService.navToLogin();
             }
           } else {
+            // abort request
+            abortRequest(config);
+
             // not authenticated yet, buffer this request
             TokenAuthService.requestBufferPush(config);
           }
