@@ -366,6 +366,7 @@ angular.module('tokenAuth.authService', [
               TokenAuthService._authenticated = false;
               if (response.status === 400) {
                 // this is an expired token, attempt refresh
+                requestInProgress = false;
                 TokenAuthService.tokenRefresh()
                   .then(verification.resolve)
                   .catch(verification.reject);
