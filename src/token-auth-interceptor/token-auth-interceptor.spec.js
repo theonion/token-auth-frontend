@@ -4,6 +4,7 @@ describe('Interceptor: TokenAuthInterceptor', function () {
 
   var $location;
   var $q;
+  var $rootScope;
   var localStorageService;
   var TokenAuthConfig;
   var TokenAuthInterceptor;
@@ -14,10 +15,11 @@ describe('Interceptor: TokenAuthInterceptor', function () {
   beforeEach(function () {
     module('tokenAuth.authInterceptor');
 
-    inject(function (_$location_, _$q_, _localStorageService_, _TokenAuthConfig_,
-        _TokenAuthInterceptor_, _TokenAuthService_) {
+    inject(function (_$location_, _$q_, _$rootScope_, _localStorageService_,
+        _TokenAuthConfig_, _TokenAuthInterceptor_, _TokenAuthService_) {
       $location = _$location_;
       $q = _$q_;
+      $rootScope = _$rootScope_;
       localStorageService = _localStorageService_;
       TokenAuthConfig = _TokenAuthConfig_;
       TokenAuthInterceptor = _TokenAuthInterceptor_;
@@ -25,8 +27,6 @@ describe('Interceptor: TokenAuthInterceptor', function () {
       testRequestConfig = {
         url: url
       };
-
-      TokenAuthService.isAuthenticated = sinon.stub().returns(true);
     });
   });
 
@@ -42,11 +42,16 @@ describe('Interceptor: TokenAuthInterceptor', function () {
 
     it('should add an authorization header when a token is in storage', function () {
       var token = 'something';
+      var verifyDeferred = $q.defer();
 
       localStorageService.get = sinon.stub().returns(token);
       TokenAuthConfig.shouldBeIntercepted = sinon.stub().returns(true);
+      TokenAuthService.tokenVerify = sinon.stub().returns(verifyDeferred.promise);
 
       TokenAuthInterceptor.request(testRequestConfig);
+
+      verifyDeferred.resolve();
+      $rootScope.$digest();
 
       expect(testRequestConfig.headers.Authorization).to.equal('JWT ' + token);
     });
@@ -54,8 +59,7 @@ describe('Interceptor: TokenAuthInterceptor', function () {
     it('should abort when no token in session, set path to login page, clear request buffer', function () {
       var loginPagePath = '/some/path/to/login';
 
-      $location.path = sinon.spy().withArgs(loginPagePath);
-      localStorageService.get = sinon.stub().returns();
+      localStorageService.get = sinon.stub();
       TokenAuthConfig.shouldBeIntercepted = sinon.stub().returns(true);
       TokenAuthConfig.getLoginPagePath = sinon.stub().returns(loginPagePath);
       TokenAuthService.navToLogin = sinon.stub();
@@ -68,6 +72,22 @@ describe('Interceptor: TokenAuthInterceptor', function () {
 
       // test if abort has been resolved, so request is cancelled, status 1 === resolved
       expect(testRequestConfig.timeout.$$state.status).to.equal(1);
+    });
+
+    it('should abort when verification fails', function () {
+      var verifyDeferred = $q.defer();
+
+      localStorageService.get = sinon.stub().returns('123');
+      TokenAuthConfig.shouldBeIntercepted = sinon.stub().returns(true);
+      TokenAuthService.tokenVerify = sinon.stub().returns(verifyDeferred.promise);
+
+      TokenAuthInterceptor.request(testRequestConfig);
+
+      verifyDeferred.reject();
+      $rootScope.$digest();
+
+      expect(testRequestConfig.headers).to.be.undefined;
+      expect(testRequestConfig.timeout).to.be.a(typeof($q.defer().promise));
     });
 
     it('should only intercept urls matching thosed provided by config', function () {
@@ -91,23 +111,27 @@ describe('Interceptor: TokenAuthInterceptor', function () {
       expect(localStorageService.get.calledOnce).to.be.true;
     });
 
-    it('should buffer requests until auth service is authenticated', function () {
+    it('should delay requests until auth service is authenticated', function () {
       var config1 = {url: '1'};
       var config2 = {url: '2'};
-      var config3 = {url: '3'};
+      var token = 'something';
+      var verifyDeferred = $q.defer();
 
-      TokenAuthService.requestBufferPush = sinon.stub();
+      localStorageService.get = sinon.stub().returns(token);
+      TokenAuthConfig.shouldBeIntercepted = sinon.stub().returns(true);
+      TokenAuthService.tokenVerify = sinon.stub().returns(verifyDeferred.promise);
 
-      TokenAuthService.isAuthenticated = sinon.stub().returns(false);
       TokenAuthInterceptor.request(config1);
       TokenAuthInterceptor.request(config2);
 
-      TokenAuthService.isAuthenticated = sinon.stub().returns(true);
-      TokenAuthInterceptor.request(config3);
+      expect(config1.headers).to.be.undefined;
+      expect(config2.headers).to.be.undefined;
 
-      expect(TokenAuthService.requestBufferPush.withArgs(config1).calledOnce).to.be.true;
-      expect(TokenAuthService.requestBufferPush.withArgs(config2).calledOnce).to.be.true;
-      expect(TokenAuthService.requestBufferPush.withArgs(config3).notCalled).to.be.true;
+      verifyDeferred.resolve();
+      $rootScope.$digest();
+
+      expect(config1.headers.Authorization).to.equal('JWT ' + token);
+      expect(config2.headers.Authorization).to.equal('JWT ' + token);
     });
   });
 

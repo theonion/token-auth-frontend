@@ -20,37 +20,45 @@ angular.module('tokenAuth.authInterceptor', [
       };
 
       this.request = function (config) {
+        var newConfig;
+
         if (!doIgnoreAuth(config) && TokenAuthConfig.shouldBeIntercepted(config.url)) {
 
+          // get token from storage
+          var token = localStorageService.get(TokenAuthConfig.getTokenKey());
           // need to inject service here, otherwise we get a circular $http dep
           var TokenAuthService = $injector.get('TokenAuthService');
 
-          if (TokenAuthService.isAuthenticated()) {
-            // we've already been authenticated
-            var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+          // check if we have a token, if not, prevent request from firing, send user to login
+          if (token) {
+            newConfig = TokenAuthService.tokenVerify()
+              .then(function () {
+                // add Authorization header
+                config.headers = config.headers || {};
+                config.headers.Authorization = 'JWT ' + token;
 
-            // check if we have a token, if not, prevent request from firing, send user to login
-            if (token) {
-              // add Authorization header
-              config.headers = config.headers || {};
-              config.headers.Authorization = 'JWT ' + token;
-            } else {
-              // abort requests where there's no token
-              abortRequest(config);
-
-              // navigate to login page
-              TokenAuthService.navToLogin();
-            }
+                return config;
+              })
+              .catch(function () {
+                // verification failed abort request
+                abortRequest(config);
+              });
           } else {
-            // abort request
+            // abort requests where there's no token
             abortRequest(config);
 
-            // not authenticated yet, buffer this request
-            TokenAuthService.requestBufferPush(config);
+            // navigate to login page
+            TokenAuthService.navToLogin();
+
+            // return aborted request
+            newConfig = config;
           }
+        } else {
+          // this is a request not being intercepted, just return it
+          newConfig = config;
         }
 
-        return config;
+        return newConfig;
       };
 
       this.responseError = function (response) {
