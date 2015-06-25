@@ -209,37 +209,45 @@ angular.module('tokenAuth.authInterceptor', [
       };
 
       this.request = function (config) {
+        var newConfig;
+
         if (!doIgnoreAuth(config) && TokenAuthConfig.shouldBeIntercepted(config.url)) {
 
+          // get token from storage
+          var token = localStorageService.get(TokenAuthConfig.getTokenKey());
           // need to inject service here, otherwise we get a circular $http dep
           var TokenAuthService = $injector.get('TokenAuthService');
 
-          if (TokenAuthService.isAuthenticated()) {
-            // we've already been authenticated
-            var token = localStorageService.get(TokenAuthConfig.getTokenKey());
+          // check if we have a token, if not, prevent request from firing, send user to login
+          if (token) {
+            newConfig = TokenAuthService.tokenVerify()
+              .then(function () {
+                // add Authorization header
+                config.headers = config.headers || {};
+                config.headers.Authorization = 'JWT ' + token;
 
-            // check if we have a token, if not, prevent request from firing, send user to login
-            if (token) {
-              // add Authorization header
-              config.headers = config.headers || {};
-              config.headers.Authorization = 'JWT ' + token;
-            } else {
-              // abort requests where there's no token
-              abortRequest(config);
-
-              // navigate to login page
-              TokenAuthService.navToLogin();
-            }
+                return config;
+              })
+              .catch(function () {
+                // verification failed abort request
+                abortRequest(config);
+              });
           } else {
-            // abort request
+            // abort requests where there's no token
             abortRequest(config);
 
-            // not authenticated yet, buffer this request
-            TokenAuthService.requestBufferPush(config);
+            // navigate to login page
+            TokenAuthService.navToLogin();
+
+            // return aborted request
+            newConfig = config;
           }
+        } else {
+          // this is a request not being intercepted, just return it
+          newConfig = config;
         }
 
-        return config;
+        return newConfig;
       };
 
       this.responseError = function (response) {
@@ -310,13 +318,33 @@ angular.module('tokenAuth.authService', [
 
       var TokenAuthService = this;
       var requestInProgress = false;
+      // false if not verified at least once, otherwise promise that resolves when
+      //  verification endpoint returns
+      var $verified = false;
 
-      TokenAuthService._authenticated = false;
       TokenAuthService._requestBuffer = [];
+
+      /**
+       * Force verification promise to be resolved. Used whenever an endpoint
+       *  besides the verify endpoint has been used to successfully authenticate.
+       */
+      var forceAuthenticated = function () {
+        $verified = $q.defer();
+        $verified.resolve();
+      };
+
+      /**
+       * Force verification promise to be rejected. Used whenever an endpoint
+       *  besides the verify endpoint has been used to unauthenticate.
+       */
+      var forceUnauthenticated = function () {
+        $verified = $q.defer();
+        $verified.reject();
+      };
 
       var authSuccess = function (deferred) {
         return function () {
-          TokenAuthService._authenticated = true;
+          forceAuthenticated();
           TokenAuthService.requestBufferRetry();
 
           // if we're currently on the login page, navigate away from it
@@ -330,7 +358,7 @@ angular.module('tokenAuth.authService', [
 
       var noTokenFailure = function (deferred) {
         return function () {
-          TokenAuthService._authenticated = false;
+          forceUnauthenticated();
           TokenAuthService.navToLogin();
           deferred.reject();
         };
@@ -340,16 +368,20 @@ angular.module('tokenAuth.authService', [
        * Token verification endpoint. Should be used as the initial request when
        *  a page loads to check if user is authenticated. All requests should be
        *  buffered until verify endpoint returns successfully.
+
+       * Because token verification is meant only to occur once when the page loads,
+       *  subsequent calls to this function will return the promise from the original
+       *  call.
        *
        * @returns {promise} resolves when authenticated, rejects otherwise.
        */
       TokenAuthService.tokenVerify = function () {
-        var verification = $q.defer();
+        if (!$verified && !requestInProgress) {
+          // verify has not been called yet, set it up
+          $verified = $q.defer();
 
-        if (!requestInProgress) {
           // no currently running request, start a new one
           requestInProgress = true;
-          TokenAuthService._pendingVerification = verification;
 
           var token = localStorageService.get(TokenAuthConfig.getTokenKey());
           if (token) {
@@ -360,22 +392,21 @@ angular.module('tokenAuth.authService', [
               {token: token},
               {ignoreTokenAuth: true}
             )
-            .then(authSuccess(verification))
+            .then(authSuccess($verified))
             .catch(function (response) {
               // some error at the verify endpoint
-              TokenAuthService._authenticated = false;
               if (response.status === 400) {
                 // this is an expired token, attempt refresh
                 requestInProgress = false;
                 TokenAuthService.tokenRefresh()
-                  .then(verification.resolve)
-                  .catch(verification.reject);
+                  .then($verified.resolve)
+                  .catch($verified.reject);
               } else if (TokenAuthConfig.isStatusCodeToHandle(response.status)) {
                 // user is not authorized, send them to login page
-                noTokenFailure(verification)();
+                noTokenFailure($verified)();
               } else {
                 // this is not an auth error, reject verification
-                verification.reject();
+                $verified.reject();
               }
             })
             .finally(function () {
@@ -383,20 +414,14 @@ angular.module('tokenAuth.authService', [
               requestInProgress = false;
             });
           } else {
-            noTokenFailure(verification)();
+            noTokenFailure($verified)();
 
             // reset request flag so other requests can go through
             requestInProgress = false;
           }
-        } else if (!TokenAuthService._pendingVerification) {
-          // there is a request happening, and it's not a verify request, reject promise
-          verification.reject();
-        } else {
-          // request in progress and it's a verify request, return existing promise
-          verification = TokenAuthService._pendingVerification;
         }
 
-        return verification.promise;
+        return $verified ? $verified.promise : $q.reject();
       };
 
       /**
@@ -473,14 +498,14 @@ angular.module('tokenAuth.authService', [
             {ignoreTokenAuth: true}
           )
           .success(function (response) {
+            forceAuthenticated();
             localStorageService.set(TokenAuthConfig.getTokenKey(), response.token);
             $location.path(TokenAuthConfig.getAfterLoginPath());
-            TokenAuthService._authenticated = true;
             TokenAuthConfig.loginCallback();
             login.resolve();
           })
           .catch(function () {
-            TokenAuthService._authenticated = false;
+            forceUnauthenticated();
             login.reject();
           })
           .finally(function () {
@@ -503,7 +528,7 @@ angular.module('tokenAuth.authService', [
        *  login page.
        */
       TokenAuthService.logout = function () {
-        TokenAuthService._authenticated = false;
+        forceUnauthenticated();
         localStorageService.remove(TokenAuthConfig.getTokenKey());
         $location.path(TokenAuthConfig.getLoginPagePath());
         TokenAuthConfig.logoutCallback();
@@ -558,13 +583,6 @@ angular.module('tokenAuth.authService', [
       TokenAuthService.navToLogin = function () {
         TokenAuthService.requestBufferClear();
         $location.path(TokenAuthConfig.getLoginPagePath());
-      };
-
-      /**
-       * @returns {boolean} true when some authorization endpoint has successfully returned.
-       */
-      TokenAuthService.isAuthenticated = function () {
-        return TokenAuthService._authenticated;
       };
 
       return TokenAuthService;
