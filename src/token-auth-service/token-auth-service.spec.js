@@ -77,15 +77,14 @@ describe('Service: TokenAuthService', function () {
 
     it('should attempt to refresh token on HTTP 400', function () {
       localStorageService.get = sinon.stub().returns(testToken);
-      TokenAuthService.tokenRefresh = sinon.stub().returns($q.defer().promise);
 
       TokenAuthService.tokenVerify();
 
       requestVerify().respond(400);
+      requestRefresh().respond(200);
       $httpBackend.flush();
 
-      expect(TokenAuthService.tokenRefresh.calledOnce).to.be.true;
-      expect(TokenAuthService.isAuthenticated()).to.be.false;
+      expect(TokenAuthService.isAuthenticated()).to.be.true;
     });
 
     it('should send user to login on HTTP 401', function () {
