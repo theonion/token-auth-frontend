@@ -1,3 +1,5 @@
+:poop: This library is **DEPRECATED**, use [cms-components](https://github.com/theonion/cms-components) [cms-token-auth](https://github.com/theonion/cms-components/tree/master/components/cms-token-auth) instead!
+
 # token-auth-frontend
 Angular library for token auth with [django-rest-framework-jwt](https://github.com/GetBlimp/django-rest-framework-jwt).
 
